@@ -1,0 +1,454 @@
+{
+  "brand": {
+    "heroMetal": {
+      "width": 899,
+      "height": 1200
+    }
+  },
+  "clients": [
+    {
+      "name": "bordando-hilos",
+      "width": 720,
+      "height": 257,
+      "dark": false
+    },
+    {
+      "name": "el-regalo-mas-molon",
+      "width": 720,
+      "height": 715,
+      "dark": false
+    },
+    {
+      "name": "fluxis",
+      "width": 720,
+      "height": 627,
+      "dark": false
+    },
+    {
+      "name": "luanlove",
+      "width": 720,
+      "height": 185,
+      "dark": false
+    },
+    {
+      "name": "vinoteca-jardi",
+      "width": 720,
+      "height": 155,
+      "dark": false
+    },
+    {
+      "name": "alqya",
+      "width": 720,
+      "height": 182,
+      "dark": false
+    },
+    {
+      "name": "bikini-azul",
+      "width": 720,
+      "height": 136,
+      "dark": false
+    },
+    {
+      "name": "coco",
+      "width": 720,
+      "height": 166,
+      "dark": false
+    },
+    {
+      "name": "kumbia",
+      "width": 720,
+      "height": 643,
+      "dark": false
+    },
+    {
+      "name": "larry",
+      "width": 720,
+      "height": 292,
+      "dark": false
+    },
+    {
+      "name": "mar-al-vent",
+      "width": 720,
+      "height": 101,
+      "dark": false
+    },
+    {
+      "name": "mua-kit",
+      "width": 720,
+      "height": 357,
+      "dark": false
+    },
+    {
+      "name": "musula",
+      "width": 720,
+      "height": 287,
+      "dark": false
+    },
+    {
+      "name": "natural-es",
+      "width": 720,
+      "height": 312,
+      "dark": false
+    },
+    {
+      "name": "panambi-velas",
+      "width": 720,
+      "height": 602,
+      "dark": false
+    },
+    {
+      "name": "pide-un-deseo",
+      "width": 720,
+      "height": 140,
+      "dark": false
+    },
+    {
+      "name": "pipiola",
+      "width": 720,
+      "height": 199,
+      "dark": false
+    },
+    {
+      "name": "port-of-dragons",
+      "width": 720,
+      "height": 235,
+      "dark": false
+    },
+    {
+      "name": "tartas-bastante-majas",
+      "width": 720,
+      "height": 180,
+      "dark": false
+    },
+    {
+      "name": "tudropshipper",
+      "width": 720,
+      "height": 337,
+      "dark": false
+    }
+  ],
+  "stack": [
+    {
+      "name": "klaviyo",
+      "width": 480,
+      "height": 143
+    },
+    {
+      "name": "meta",
+      "width": 480,
+      "height": 97
+    },
+    {
+      "name": "shopify",
+      "width": 480,
+      "height": 139
+    },
+    {
+      "name": "google-ads",
+      "width": 480,
+      "height": 88
+    },
+    {
+      "name": "tiktok-ads",
+      "width": 480,
+      "height": 75
+    }
+  ],
+  "panels": [
+    {
+      "name": "cosmetica",
+      "width": 1200,
+      "height": 572
+    },
+    {
+      "name": "decoracion-hogar",
+      "width": 1200,
+      "height": 572
+    },
+    {
+      "name": "joyeria",
+      "width": 1200,
+      "height": 572
+    },
+    {
+      "name": "lenceria",
+      "width": 1200,
+      "height": 572
+    },
+    {
+      "name": "moda-femenina",
+      "width": 1200,
+      "height": 572
+    },
+    {
+      "name": "muebles-y-decoracion-premium",
+      "width": 1200,
+      "height": 572
+    },
+    {
+      "name": "ropa-personalizada",
+      "width": 1200,
+      "height": 572
+    },
+    {
+      "name": "streetwear",
+      "width": 1200,
+      "height": 572
+    },
+    {
+      "name": "accesorios-para-mascotas",
+      "width": 1200,
+      "height": 572
+    },
+    {
+      "name": "productos-para-bebes",
+      "width": 1200,
+      "height": 572
+    },
+    {
+      "name": "suplementos-deportivos",
+      "width": 1200,
+      "height": 572
+    },
+    {
+      "name": "velas-artesanales",
+      "width": 1200,
+      "height": 573
+    }
+  ],
+  "stores": [
+    {
+      "name": "bikini",
+      "fold": {
+        "width": 1440,
+        "height": 900
+      },
+      "tall": {
+        "width": 900,
+        "height": 1260
+      },
+      "long": {
+        "width": 720,
+        "height": 1872
+      }
+    },
+    {
+      "name": "bordando-hilos",
+      "fold": {
+        "width": 1440,
+        "height": 900
+      },
+      "tall": {
+        "width": 900,
+        "height": 1260
+      },
+      "long": {
+        "width": 720,
+        "height": 1872
+      }
+    },
+    {
+      "name": "coco",
+      "fold": {
+        "width": 1440,
+        "height": 900
+      },
+      "tall": {
+        "width": 900,
+        "height": 1260
+      },
+      "long": {
+        "width": 720,
+        "height": 1872
+      }
+    },
+    {
+      "name": "el-regalo",
+      "fold": {
+        "width": 1440,
+        "height": 900
+      },
+      "tall": {
+        "width": 900,
+        "height": 1260
+      },
+      "long": {
+        "width": 720,
+        "height": 1872
+      }
+    },
+    {
+      "name": "fluxis",
+      "fold": {
+        "width": 1440,
+        "height": 900
+      },
+      "tall": {
+        "width": 900,
+        "height": 1260
+      },
+      "long": {
+        "width": 720,
+        "height": 1872
+      }
+    },
+    {
+      "name": "luanlove",
+      "fold": {
+        "width": 1440,
+        "height": 900
+      },
+      "tall": {
+        "width": 900,
+        "height": 1260
+      },
+      "long": {
+        "width": 720,
+        "height": 1721
+      }
+    },
+    {
+      "name": "mua",
+      "fold": {
+        "width": 1440,
+        "height": 900
+      },
+      "tall": {
+        "width": 900,
+        "height": 1260
+      },
+      "long": {
+        "width": 720,
+        "height": 1872
+      }
+    },
+    {
+      "name": "musula",
+      "fold": {
+        "width": 1440,
+        "height": 900
+      },
+      "tall": {
+        "width": 900,
+        "height": 1260
+      },
+      "long": {
+        "width": 720,
+        "height": 1671
+      }
+    },
+    {
+      "name": "panambi",
+      "fold": {
+        "width": 1440,
+        "height": 900
+      },
+      "tall": {
+        "width": 900,
+        "height": 1260
+      },
+      "long": {
+        "width": 720,
+        "height": 1872
+      }
+    },
+    {
+      "name": "pide-un-deseo",
+      "fold": {
+        "width": 1440,
+        "height": 900
+      },
+      "tall": {
+        "width": 900,
+        "height": 1260
+      },
+      "long": {
+        "width": 720,
+        "height": 1872
+      }
+    },
+    {
+      "name": "pipiola",
+      "fold": {
+        "width": 1440,
+        "height": 900
+      },
+      "tall": {
+        "width": 900,
+        "height": 1260
+      },
+      "long": {
+        "width": 720,
+        "height": 1872
+      }
+    },
+    {
+      "name": "tartas",
+      "fold": {
+        "width": 1440,
+        "height": 900
+      },
+      "tall": {
+        "width": 900,
+        "height": 1260
+      },
+      "long": {
+        "width": 720,
+        "height": 1680
+      }
+    },
+    {
+      "name": "vinoteca",
+      "fold": {
+        "width": 1440,
+        "height": 900
+      },
+      "tall": {
+        "width": 900,
+        "height": 1260
+      },
+      "long": {
+        "width": 720,
+        "height": 1872
+      }
+    }
+  ],
+  "notifications": [
+    {
+      "name": "order-1",
+      "source": "Notificacion shopify 1.png",
+      "width": 760,
+      "height": 160
+    },
+    {
+      "name": "order-2",
+      "source": "shopify notificaction 2.png",
+      "width": 760,
+      "height": 160
+    },
+    {
+      "name": "order-3",
+      "source": "shopify notification 3.png",
+      "width": 760,
+      "height": 161
+    },
+    {
+      "name": "order-4",
+      "source": "shopify notification 4.png",
+      "width": 760,
+      "height": 160
+    },
+    {
+      "name": "order-5",
+      "source": "shopify notification 7.png",
+      "width": 760,
+      "height": 160
+    },
+    {
+      "name": "order-6",
+      "source": "shopify notificication 6.png",
+      "width": 760,
+      "height": 160
+    }
+  ]
+}

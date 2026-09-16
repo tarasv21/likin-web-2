@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "skills": {
+    "refero-design": {
+      "source": "referodesign/refero_skill",
+      "sourceType": "github",
+      "skillPath": "skills/refero-design/SKILL.md",
+      "computedHash": "b39b8c1f87664b1b63c50f5e2bbe7586b08790101920c96d9bbf75fc3a2d5a61"
+    },
+    "ui-ux-pro-max": {
+      "source": "nextlevelbuilder/ui-ux-pro-max-skill",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/ui-ux-pro-max/SKILL.md",
+      "computedHash": "4080ff883b26b670a5a224fb332e89ecc15319535f4d14279947ad7812fec558"
+    }
+  }
+}
