@@ -133,7 +133,9 @@ export default function HeroScene({ progress, pointer, onReady, variant = "hero"
       const easeIntro = 1 - Math.pow(1 - intro, 3);
 
       // targets
-      const targetRy = (variant === "cta" ? 0.18 : -0.26) + p * 0.6 + pointer.current.x * 0.07 + (1 - easeIntro) * -0.55;
+      // CTA: the mark completes one full turn across the section, matching the 2D fallback.
+      const turn = variant === "cta" ? Math.min(1, Math.max(0, (p - 0.14) / 0.38)) : 0;
+      const targetRy = (variant === "cta" ? 0.18 + turn * Math.PI * 2 : -0.26 + p * 0.6) + pointer.current.x * 0.07 + (1 - easeIntro) * -0.55;
       const targetRx = 0.1 - p * 0.22 + pointer.current.y * 0.05;
       // slow spring towards targets + a barely-there idle drift
       cur.ry += (targetRy - cur.ry) * 0.06;

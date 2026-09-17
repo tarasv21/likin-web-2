@@ -38,7 +38,7 @@ export const organizationJsonLd = () => ({
   logo: `${site.url}/brand/favicon-512.png`,
   email: site.email,
   description: site.description,
-  sameAs: [site.social.instagram, site.social.linkedin],
+  sameAs: [site.social.instagram, site.social.linkedinCompany],
   founder: { "@type": "Person", name: site.founder.name, url: site.founder.url, jobTitle: "Founder" },
   knowsAbout: ["eCommerce", "Shopify", "Paid Media", "CRO", "Email Marketing", "Retention", "Meta Ads", "Google Ads", "TikTok Ads", "Klaviyo"],
   areaServed: "ES",

@@ -40,8 +40,8 @@ export function FinalCta({ eyebrow = "Ahora te toca a ti", title = "¿Dejamos hu
 
   return (
     <section id={id} ref={ref} aria-labelledby={`${id}-title`} className="relative isolate overflow-hidden border-t border-hairline bg-obsidian">
-      <FingerprintStage progress={progress} variant="cta" priority={false} className="pointer-events-none absolute -right-[22%] top-[-6%] h-[60%] w-[80vw] opacity-70 md:right-[-2%] md:top-[4%] md:h-[92%] md:w-[46vw] md:opacity-100" />
-      <div className="container-wide relative flex min-h-[78svh] flex-col justify-end py-(--spacing-section) md:min-h-[86vh] md:justify-center">
+      <FingerprintStage progress={progress} variant="cta" priority={false} className="pointer-events-none absolute left-1/2 top-[7%] h-[38%] w-[76vw] -translate-x-1/2 opacity-85 md:left-auto md:right-[-2%] md:top-[4%] md:h-[92%] md:w-[46vw] md:translate-x-0 md:opacity-100" />
+      <div className="container-wide relative flex min-h-[86svh] flex-col justify-end pb-(--spacing-section) pt-[48svh] md:min-h-[86vh] md:justify-center md:py-(--spacing-section)">
         <div className="max-w-[40rem]">
           <p className="text-label text-teal">{eyebrow}</p>
           <h2 id={`${id}-title`} className="text-display mt-5">

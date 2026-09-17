@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Logo } from "@/components/brand/Logo";
 import { Fingerprint } from "@/components/brand/Fingerprint";
-import { ArrowUpRight, Instagram } from "@/components/ui/Icons";
+import { ArrowUpRight, Instagram, LinkedIn, Mail } from "@/components/ui/Icons";
 import { site } from "@/data/site";
 import { ContactLink } from "./ContactLink";
 
@@ -13,11 +13,19 @@ export function Footer() {
           <Logo height={20} />
           <p className="mt-5 max-w-[38ch] text-body text-steel">Agencia especializada en eCommerce. Creamos tiendas en Shopify y escalamos las que ya venden con Paid Media, CRO y Retention.</p>
           <ul className="mt-6 flex gap-2">
-            <li>
-              <a href={site.social.instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram de Likin Agency" className="grid size-11 place-items-center rounded-full border border-hairline text-steel transition-colors hover:border-steel hover:text-cloud">
-                <Instagram size={18} />
-              </a>
-            </li>
+            {(
+              [
+                [site.social.instagram, "Instagram de Likin Agency", Instagram],
+                [site.social.linkedinCompany, "LinkedIn de Likin Agency", LinkedIn],
+                [`mailto:${site.email}`, `Escribir a ${site.email}`, Mail],
+              ] as const
+            ).map(([href, label, Icon]) => (
+              <li key={href}>
+                <a href={href} target={href.startsWith("mailto") ? undefined : "_blank"} rel="noopener noreferrer" aria-label={label} className="grid size-11 place-items-center rounded-full border border-hairline text-steel transition-colors hover:border-steel hover:text-cloud">
+                  <Icon size={18} />
+                </a>
+              </li>
+            ))}
           </ul>
         </div>
         <nav aria-label="Pie de página" className="grid grid-cols-2 gap-8 md:col-span-6 md:col-start-7 md:grid-cols-3">

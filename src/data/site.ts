@@ -12,6 +12,9 @@ export const site = {
   social: {
     instagram: "https://www.instagram.com/likinagency/",
     instagramTaras: "https://www.instagram.com/tarasecom/",
+    /** Company page — used in the footer and in the Organization schema. */
+    linkedinCompany: "https://www.linkedin.com/company/likin-agency/",
+    /** Founder's personal profile — used only in the Person schema. */
     linkedin: "https://www.linkedin.com/in/taras-vasyliv-400248258/",
   },
   founder: {

@@ -17,8 +17,8 @@ export function Results({ lead = results[0], others = results.slice(1), eyebrow 
     <section id="resultados" aria-labelledby="resultados-title" className="section-pad bg-obsidian">
       <div className="container-wide">
         <Reveal className="grid gap-4 md:grid-cols-12">
-          <p className="text-label text-steel md:col-span-3">{eyebrow}</p>
-          <h2 id="resultados-title" className="text-h2 max-w-[14ch] md:col-span-9">
+          <p className="text-label text-center text-steel md:col-span-3 md:text-left">{eyebrow}</p>
+          <h2 id="resultados-title" className="text-h2 mx-auto max-w-[14ch] text-balance text-center md:col-span-9 md:mx-0 md:text-left">
             {title ?? (
               <>
                 No vendemos promesas. <span className="text-steel">Enseñamos resultados.</span>

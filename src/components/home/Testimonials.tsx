@@ -48,6 +48,24 @@ export function Testimonials({ id = "testimonios", eyebrow = "No lo decimos noso
     return () => cancelAnimationFrame(raf);
   }, [desktop, reduced, hover, userPaused, active, go]);
 
+  // mobile: open on a middle card, so there is a testimonial on each side and the
+  // carousel reads as one at a glance instead of looking like a left-aligned list.
+  const startedMobile = useRef(false);
+  useEffect(() => {
+    if (desktop || startedMobile.current) return;
+    const el = track.current;
+    if (!el || n < 3) return;
+    const start = Math.min(n - 1, Math.max(1, Math.floor((n - 1) / 2)));
+    const raf = requestAnimationFrame(() => {
+      const li = el.children[start] as HTMLElement | undefined;
+      if (!li) return;
+      startedMobile.current = true;
+      el.scrollTo({ left: li.offsetLeft - (el.clientWidth - li.offsetWidth) / 2, behavior: "auto" });
+      setIndex(start);
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [desktop, n]);
+
   // mobile: sync index with scroll-snap
   useEffect(() => {
     if (desktop) return;
