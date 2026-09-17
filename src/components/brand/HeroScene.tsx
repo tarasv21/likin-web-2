@@ -133,19 +133,29 @@ export default function HeroScene({ progress, pointer, onReady, variant = "hero"
       const easeIntro = 1 - Math.pow(1 - intro, 3);
 
       // targets
-      // CTA: the mark completes one full turn across the section, matching the 2D fallback.
-      const turn = variant === "cta" ? Math.min(1, Math.max(0, (p - 0.14) / 0.38)) : 0;
-      const targetRy = (variant === "cta" ? 0.18 + turn * Math.PI * 2 : -0.26 + p * 0.6) + pointer.current.x * 0.07 + (1 - easeIntro) * -0.55;
-      const targetRx = 0.1 - p * 0.22 + pointer.current.y * 0.05;
+      // CTA: the mark is pressed onto the page — it comes down tilted and a touch closer to
+      // the camera, then flattens and settles on contact. No spin; we leave a print.
+      const pr = variant === "cta" ? Math.min(1, Math.max(0, (p - 0.1) / 0.42)) : 0;
+      const press = variant === "cta" ? pr * pr * (3 - 2 * pr) : 0;
+      const targetRy = (variant === "cta" ? 0.2 - press * 0.2 : -0.26 + p * 0.6) + pointer.current.x * 0.07 + (1 - easeIntro) * -0.55;
+      const targetRx = (variant === "cta" ? 0.22 - press * 0.22 : 0.1 - p * 0.22) + pointer.current.y * 0.05;
       // slow spring towards targets + a barely-there idle drift
       cur.ry += (targetRy - cur.ry) * 0.06;
       cur.rx += (targetRx - cur.rx) * 0.06;
       const idle = Math.sin(t * 0.55) * 0.012;
       pivot.rotation.y = cur.ry + idle;
       pivot.rotation.x = cur.rx + Math.cos(t * 0.4) * 0.006;
-      pivot.position.y = p * 1.7 + (1 - easeIntro) * -0.25;
-      pivot.position.x = p * 0.35;
-      camera.position.z = 6.4 - p * 1.1;
+      if (variant === "cta") {
+        pivot.position.y = (1 - press) * 0.55;
+        pivot.position.x = (1 - press) * -0.3;
+        const s = 1.12 - press * 0.12;
+        pivot.scale.setScalar(s);
+        camera.position.z = 6.4;
+      } else {
+        pivot.position.y = p * 1.7 + (1 - easeIntro) * -0.25;
+        pivot.position.x = p * 0.35;
+        camera.position.z = 6.4 - p * 1.1;
+      }
 
       // light rig sweeps with scroll: incidence changes → tone changes
       key.position.set(3.2 - p * 7.5, 3.6 - p * 1.5, 4.5 + p * 1.5);

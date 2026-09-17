@@ -9,12 +9,12 @@ import { cn } from "@/lib/utils";
 const HeroScene = dynamic(() => import("./HeroScene"), { ssr: false });
 
 /**
- * Scroll window (section progress) over which the CTA print completes its full turn.
- * It lands — and flashes — exactly as the section settles into the viewport, not after
- * the mark has already scrolled past the top edge.
+ * Scroll window (section progress) over which the CTA print is pressed down.
+ * Contact — and the flash — land exactly as the section settles into the viewport,
+ * not after the mark has already scrolled past the top edge.
  */
-export const TURN_FROM = 0.14;
-export const TURN_TO = 0.52;
+export const PRESS_FROM = 0.1;
+export const PRESS_TO = 0.52;
 
 /**
  * The fingerprint as an object. Always renders the metal render (alpha WebP) first — it is
@@ -65,16 +65,18 @@ export function FingerprintStage({ progress, className, variant = "hero", priori
       const p = progress.current;
       if (reduced) {
         el.style.setProperty("--p", "0");
-        el.style.setProperty("--turn", "0deg");
+        el.style.setProperty("--press", "1");
         return;
       }
       el.style.setProperty("--p", p.toFixed(4));
       if (variant === "cta") {
-        // One full turn while the section crosses the viewport, and a specular flash at the
-        // exact moment the mark lands facing front again.
-        const q = (p - TURN_FROM) / (TURN_TO - TURN_FROM);
-        el.style.setProperty("--turn", `${(Math.min(1, Math.max(0, q)) * 360).toFixed(2)}deg`);
-        if (flash.current) flash.current.style.opacity = Math.max(0, 1 - Math.abs(q - 1) / 0.12).toFixed(3);
+        // The mark is pressed onto the page: it comes down out of focus and slightly larger,
+        // settles, and the specular flash fires on contact. No spin — we leave a print.
+        const q = (p - PRESS_FROM) / (PRESS_TO - PRESS_FROM);
+        const t = Math.min(1, Math.max(0, q));
+        // Accelerating fall, hard stop on contact.
+        el.style.setProperty("--press", (t * t * (3 - 2 * t)).toFixed(4));
+        if (flash.current) flash.current.style.opacity = Math.max(0, 1 - Math.abs(q - 1) / 0.1).toFixed(3);
       }
     };
     const onScroll = () => {
@@ -103,16 +105,20 @@ export function FingerprintStage({ progress, className, variant = "hero", priori
       <div
         ref={img}
         className={cn("absolute inset-0 transition-opacity duration-[900ms] ease-(--ease-out)", ready ? "opacity-0" : "opacity-100")}
-        style={{ "--p": 0, perspective: "1400px" } as CSSProperties}
+        style={{ "--p": 0, "--press": variant === "cta" ? 0 : 1, perspective: "1400px" } as CSSProperties}
       >
         <div
           className="relative h-full w-full will-change-transform"
           style={{
-            // CTA: a full turn. The flat render spins in plane — a rotateY flip would collapse
-            // the mark to a sliver at 90°. The real 3D object (desktop) turns on Y instead.
-            transform: variant === "cta" ? "rotateZ(var(--turn, 0deg)) rotateY(calc(var(--p) * 10deg - 5deg)) rotateX(calc(var(--p) * 6deg))" : "translateY(calc(var(--p) * -22%)) rotateY(calc(-8deg + var(--p) * 30deg)) rotateX(calc(4deg - var(--p) * 10deg))",
+            // CTA: pressing down onto the page. Above the surface it is bigger, tilted and
+            // out of focus; on contact it is flat, sharp and full strength.
+            transform:
+              variant === "cta"
+                ? "translateY(calc((1 - var(--press, 0)) * -6%)) scale(calc(1.14 - var(--press, 0) * 0.14)) rotateX(calc((1 - var(--press, 0)) * 11deg)) rotateZ(calc((1 - var(--press, 0)) * -4deg))"
+                : "translateY(calc(var(--p) * -22%)) rotateY(calc(-8deg + var(--p) * 30deg)) rotateX(calc(4deg - var(--p) * 10deg))",
             transformStyle: "preserve-3d",
-            opacity: variant === "cta" ? 1 : "calc(1 - max(0, var(--p) - 0.55) * 2.2)",
+            filter: variant === "cta" ? "blur(calc((1 - var(--press, 0)) * 4px))" : undefined,
+            opacity: variant === "cta" ? "calc(0.26 + var(--press, 0) * 0.74)" : "calc(1 - max(0, var(--p) - 0.55) * 2.2)",
           }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -147,7 +153,7 @@ export function FingerprintStage({ progress, className, variant = "hero", priori
           <HeroScene progress={progress} pointer={pointer} onReady={onReady} variant={variant} />
         </div>
       )}
-      {/* The turn lands: one flash over the mark. Sits above the 2D fallback and the 3D canvas. */}
+      {/* Contact: one flash over the mark. Sits above the 2D fallback and the 3D canvas. */}
       {variant === "cta" && !reduced && (
         <div
           ref={flash}
