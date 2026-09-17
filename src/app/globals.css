@@ -20,9 +20,10 @@
   --color-mint: #78f5d8; /* highlights, data */
   --color-teal-mid: #00a98d;
   --color-teal-deep: #00483d;
+  --color-paper: #e4e9e7; /* light sections — muted, never pure white against obsidian */
   --color-ink: #050807; /* text on light sections */
-  --color-ink-2: #3d4744; /* secondary text on light sections — 7.9:1 on cloud */
-  --color-paper-line: #d6dbd9; /* dividers on light sections */
+  --color-ink-2: #3d4744; /* secondary text on light sections — 7.2:1 on paper */
+  --color-paper-line: #c9d0cd; /* dividers on light sections */
   --color-danger: #ff8a80;
 
   /* Typography — Geist (free alternative allowed by the manual) + Geist Mono */
@@ -273,11 +274,20 @@
 }
 /* Light editorial section (Cloud) — text tokens flip */
 @utility on-paper {
-  background: var(--color-cloud);
+  background: var(--color-paper);
   color: var(--color-ink);
   color-scheme: light;
-  & ::selection { background: var(--color-ink); color: var(--color-cloud); }
+  & ::selection { background: var(--color-ink); color: var(--color-paper); }
   & * { border-color: var(--color-paper-line); }
+}
+
+/* Dark → paper → dark without a hard seam. The band belongs to the light section,
+   so the gradient always resolves to the exact paper value below it. */
+@utility paper-fade-in {
+  background-image: linear-gradient(to bottom, var(--color-obsidian), color-mix(in oklab, var(--color-obsidian) 55%, var(--color-paper)) 38%, color-mix(in oklab, var(--color-obsidian) 18%, var(--color-paper)) 72%, var(--color-paper));
+}
+@utility paper-fade-out {
+  background-image: linear-gradient(to top, var(--color-obsidian), color-mix(in oklab, var(--color-obsidian) 55%, var(--color-paper)) 38%, color-mix(in oklab, var(--color-obsidian) 18%, var(--color-paper)) 72%, var(--color-paper));
 }
 
 /* =========================================================

@@ -238,10 +238,19 @@ export function GrowthSystem({ id = "sistema", cta, title }: { id?: string; cta?
                   aria-label="La huella de Likin como diagrama: Paid Media, CRO y Retention se conectan y convergen en el crecimiento."
                 >
                   {RIDGES.map((i) => {
-                    const lit = LIT.includes(i);
-                    const core = i === CORE;
-                    const fill = lit || (core && ph >= 5) ? "var(--color-teal)" : "var(--color-hairline)";
-                    return <use key={i} href={ridgeHref(i)} fill={fill} style={{ opacity: lit ? 0.9 : core ? 0.9 : 0.6, transition: "fill 700ms var(--ease-out), opacity 700ms var(--ease-out)" }} />;
+                    const lever = LIT.includes(i);
+                    // Phase 4: the three levers carry the signal. Phase 5: the mark completes —
+                    // every ridge fills, staggered outward from the core, so GROWTH is the whole print.
+                    const on = lever || ph >= 5;
+                    const delay = ph >= 5 && !lever ? Math.abs(i - CORE) * 55 : 0;
+                    return (
+                      <use
+                        key={i}
+                        href={ridgeHref(i)}
+                        fill={on ? "var(--color-teal)" : "var(--color-hairline)"}
+                        style={{ opacity: on ? 0.9 : 0.6, transition: "fill 700ms var(--ease-out), opacity 700ms var(--ease-out)", transitionDelay: `${delay}ms` }}
+                      />
+                    );
                   })}
                   {!reduced &&
                     printOn &&

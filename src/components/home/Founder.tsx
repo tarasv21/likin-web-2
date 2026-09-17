@@ -11,7 +11,9 @@ import { cn } from "@/lib/utils";
 export function Founder({ compact = false, id = "taras" }: { compact?: boolean; id?: string }) {
   return (
     <section id={id} aria-labelledby={`${id}-title`} className="on-paper">
-      <div className={cn("container-wide grid gap-10 md:grid-cols-12 md:items-center md:gap-8", compact ? "py-(--spacing-section)" : "py-(--spacing-section-l)")}>
+      {/* The envelope changes, but it is a dissolve, not a cut. */}
+      <div aria-hidden className="paper-fade-in h-20 w-full md:h-28" />
+      <div className={cn("container-wide grid gap-10 md:grid-cols-12 md:items-center md:gap-8", compact ? "pb-(--spacing-section) pt-6 md:pt-10" : "pb-(--spacing-section-l) pt-8 md:pt-12")}>
         <Reveal as="figure" kind="clip" className={cn("md:col-span-5", compact ? "md:col-span-4" : "md:col-span-5")}>
           <div className={cn("relative overflow-hidden bg-paper-line", compact ? "aspect-square" : "aspect-[4/5]")}>
             <Image src={compact ? "/founder/taras-square.webp" : "/founder/taras-portrait.webp"} alt="Taras Vasyliv, fundador de Likin, trabajando con su portátil en una terraza" width={compact ? 900 : 1200} height={compact ? 900 : 1500} sizes="(min-width: 768px) 40vw, 100vw" loading="lazy" className="h-full w-full object-cover" />
@@ -49,6 +51,7 @@ export function Founder({ compact = false, id = "taras" }: { compact?: boolean; 
           </p>
         </Reveal>
       </div>
+      <div aria-hidden className="paper-fade-out h-20 w-full md:h-28" />
     </section>
   );
 }

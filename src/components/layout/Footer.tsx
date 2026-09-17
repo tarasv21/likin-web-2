@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Logo } from "@/components/brand/Logo";
 import { Fingerprint } from "@/components/brand/Fingerprint";
-import { ArrowUpRight, Instagram, LinkedIn, Mail } from "@/components/ui/Icons";
+import { ArrowUpRight, Instagram } from "@/components/ui/Icons";
 import { site } from "@/data/site";
 import { ContactLink } from "./ContactLink";
 
@@ -13,21 +13,11 @@ export function Footer() {
           <Logo height={20} />
           <p className="mt-5 max-w-[38ch] text-body text-steel">Agencia especializada en eCommerce. Creamos tiendas en Shopify y escalamos las que ya venden con Paid Media, CRO y Retention.</p>
           <ul className="mt-6 flex gap-2">
-            {[
-              [site.social.instagram, "Instagram de Likin", Instagram],
-              [site.social.instagramTaras, "Instagram de Taras", Instagram],
-              [site.social.linkedin, "LinkedIn de Taras Vasyliv", LinkedIn],
-              [`mailto:${site.email}`, "Escribir a Likin", Mail],
-            ].map(([href, label, Icon]) => (
-              <li key={href as string}>
-                <a href={href as string} target={(href as string).startsWith("mailto") ? undefined : "_blank"} rel="noopener noreferrer" aria-label={label as string} className="grid size-11 place-items-center rounded-full border border-hairline text-steel transition-colors hover:border-steel hover:text-cloud">
-                  {(() => {
-                    const I = Icon as typeof Instagram;
-                    return <I size={18} />;
-                  })()}
-                </a>
-              </li>
-            ))}
+            <li>
+              <a href={site.social.instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram de Likin Agency" className="grid size-11 place-items-center rounded-full border border-hairline text-steel transition-colors hover:border-steel hover:text-cloud">
+                <Instagram size={18} />
+              </a>
+            </li>
           </ul>
         </div>
         <nav aria-label="Pie de página" className="grid grid-cols-2 gap-8 md:col-span-6 md:col-start-7 md:grid-cols-3">
@@ -65,7 +55,7 @@ export function Footer() {
                 </ContactLink>
               </li>
               <li>
-                <a href={`mailto:${site.email}`} className="text-cloud/85 transition-colors hover:text-teal [overflow-wrap:anywhere]">
+                <a href={`mailto:${site.email}`} className="text-small text-cloud/85 transition-colors hover:text-teal [overflow-wrap:anywhere]">
                   {site.email}
                 </a>
               </li>

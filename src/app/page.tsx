@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Hero } from "@/components/home/Hero";
 import { ClientMarquee } from "@/components/home/ClientMarquee";
 import { Results } from "@/components/home/Results";
+import { PanelsMarquee } from "@/components/home/PanelsMarquee";
 import { SalesPhone } from "@/components/home/SalesPhone";
 import { Problem } from "@/components/home/Problem";
 import { Paths } from "@/components/home/Paths";
@@ -33,6 +34,7 @@ export default function HomePage() {
       <Hero />
       <ClientMarquee />
       <Results />
+      <PanelsMarquee />
       <SalesPhone />
       <Problem />
       <Paths />
