@@ -471,6 +471,15 @@ details > summary::-webkit-details-marker { display: none; }
 @utility hero-light {
   animation: hero-light 1.7s ease-out backwards;
 }
+/* For the LCP text (H1, lead paragraph): visible from the first paint, it only rises and
+   brightens. An opacity-0 start would push the LCP to the end of the animation. */
+@keyframes hero-rise {
+  from { opacity: 0.32; transform: translateY(16px); }
+  to { opacity: 1; transform: none; }
+}
+@utility hero-rise {
+  animation: hero-rise 0.9s var(--ease-out) backwards;
+}
 /* The room is dark and the lights come up. Painted OVER the print so the LCP image itself
    is on screen from the first frame (an opacity fade on the image would delay the LCP). */
 @keyframes hero-unveil {
@@ -481,6 +490,6 @@ details > summary::-webkit-details-marker { display: none; }
   animation: hero-unveil 1.3s ease-out 80ms forwards;
 }
 @media (prefers-reduced-motion: reduce) {
-  .hero-in, .md\:hero-in, .hero-light { animation: none; }
+  .hero-in, .md\:hero-in, .hero-light, .hero-rise { animation: none; }
   .hero-unveil { animation: none; opacity: 0; }
 }

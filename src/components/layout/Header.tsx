@@ -35,11 +35,18 @@ export function Header() {
 
   useEffect(() => {
     let raf = 0;
+    // The capsule appears when we leave the hero (its pinned track ends), not on the first
+    // scroll: during the film the header stays part of the scene.
+    const threshold = () => {
+      const hero = document.getElementById("hero");
+      if (!hero || hero.offsetHeight <= window.innerHeight * 1.2) return 56;
+      return hero.offsetHeight - window.innerHeight * 0.92;
+    };
     const onScroll = () => {
       if (raf) return;
       raf = requestAnimationFrame(() => {
         raf = 0;
-        setScrolled(window.scrollY > 56);
+        setScrolled(window.scrollY > threshold());
       });
     };
     onScroll();
@@ -151,7 +158,7 @@ export function Header() {
               onClick={() => openLead(ctaTrack, "header")}
               className={cn(
                 "group/cta inline-flex h-10 items-center gap-2 rounded-button px-3.5 text-[0.95rem] font-medium transition-[background-color,color,border-color] duration-(--dur-fast)",
-                capsule ? "bg-teal text-obsidian hover:bg-mint" : "border border-outline text-cloud hover:border-steel hover:bg-graphite/60",
+                capsule ? "bg-teal text-obsidian hover:bg-mint" : "text-cloud/85 hover:text-cloud",
                 "max-md:hidden",
               )}
             >
@@ -161,13 +168,13 @@ export function Header() {
             <button
               type="button"
               onClick={() => openLead(ctaTrack, "header")}
-              className={cn("inline-flex h-10 items-center rounded-button px-3.5 text-[0.9rem] font-medium md:hidden", capsule ? "bg-teal text-obsidian" : "border border-outline text-cloud")}
+              className={cn("inline-flex h-10 items-center rounded-button px-3.5 text-[0.9rem] font-medium md:hidden", capsule ? "bg-teal text-obsidian" : "text-cloud/90")}
             >
               {ctx === "build" ? "Crear tienda" : ctx === "scale" ? "Escalar" : "Dejar huella"}
             </button>
             <button
               type="button"
-              className="grid size-10 place-items-center rounded-button border border-outline text-cloud md:hidden"
+              className={cn("grid size-10 place-items-center rounded-button text-cloud md:hidden", capsule || menuOpen ? "border border-outline" : "border border-white/10")}
               aria-expanded={menuOpen}
               aria-controls="menu-movil"
               aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"}
