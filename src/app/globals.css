@@ -409,3 +409,78 @@ dialog[data-sheet]::backdrop {
 
 details > summary { list-style: none; }
 details > summary::-webkit-details-marker { display: none; }
+
+/* =========================================================
+   HERO — cinematic light rig (studio, not glow soup)
+   One light source from above, a blueprint grid that fades out, a floor pool
+   under the object, a vignette to frame it and a whisper of grain. All layers are
+   CSS gradients; the print stays the only "real" thing in the room.
+   ========================================================= */
+@utility hero-grid {
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--color-mint) 7%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--color-mint) 7%, transparent) 1px, transparent 1px);
+  background-size: 88px 88px;
+  background-position: calc(50% - 44px) 0;
+  -webkit-mask-image: radial-gradient(ellipse 78% 70% at var(--spot-x, 50%) 28%, #000 10%, transparent 76%);
+  mask-image: radial-gradient(ellipse 78% 70% at var(--spot-x, 50%) 28%, #000 10%, transparent 76%);
+}
+/* One overhead lamp: a narrow cone straight down plus the soft pool it throws at the top. */
+@utility hero-spot {
+  background:
+    conic-gradient(at var(--spot-x, 50%) -6%, transparent 43%, color-mix(in srgb, var(--color-mint) 7%, transparent) 47%, color-mix(in srgb, #dffff5 17%, transparent) 49.2%, color-mix(in srgb, #dffff5 17%, transparent) 50.8%, color-mix(in srgb, var(--color-mint) 7%, transparent) 53%, transparent 57%),
+    radial-gradient(ellipse 44% 30% at var(--spot-x, 50%) -2%, color-mix(in srgb, var(--color-mint) 22%, transparent), transparent 72%);
+}
+/* Light bouncing off the floor beneath the object. */
+@utility hero-pool {
+  background: radial-gradient(ellipse 34% 10% at var(--pool-x, 50%) var(--pool-y, 72%), color-mix(in srgb, var(--color-teal) 26%, transparent), color-mix(in srgb, var(--color-teal) 7%, transparent) 46%, transparent 78%);
+}
+@utility hero-vignette {
+  background: radial-gradient(ellipse 82% 74% at 50% 44%, transparent 48%, color-mix(in srgb, var(--color-obsidian) 58%, transparent) 84%, color-mix(in srgb, var(--color-obsidian) 88%, transparent) 100%);
+}
+@utility hero-grain {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.55'/></svg>");
+  background-size: 180px 180px;
+  mix-blend-mode: overlay;
+  opacity: 0.07;
+}
+/* Display type lit from behind glass: a vertical fall-off, never a colour gradient. */
+@utility text-luminous {
+  background-image: linear-gradient(180deg, #ffffff 0%, var(--color-cloud) 40%, #c3d0cb 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+/* Eyebrow flanked by a hairline that fades out — the section marker from the reference. */
+@utility eyebrow-line {
+  background-image: linear-gradient(90deg, color-mix(in srgb, var(--color-mint) 32%, transparent), color-mix(in srgb, var(--color-mint) 12%, transparent) 55%, transparent);
+}
+
+/* Entrance: the room lights up, then the copy arrives in order. Once, on load. */
+@keyframes hero-in {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes hero-light {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@utility hero-in {
+  animation: hero-in 0.95s var(--ease-out) backwards;
+}
+@utility hero-light {
+  animation: hero-light 1.7s ease-out backwards;
+}
+/* The room is dark and the lights come up. Painted OVER the print so the LCP image itself
+   is on screen from the first frame (an opacity fade on the image would delay the LCP). */
+@keyframes hero-unveil {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@utility hero-unveil {
+  animation: hero-unveil 1.3s ease-out 80ms forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-in, .md\:hero-in, .hero-light { animation: none; }
+  .hero-unveil { animation: none; opacity: 0; }
+}
