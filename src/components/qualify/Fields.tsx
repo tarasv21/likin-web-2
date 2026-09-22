@@ -6,6 +6,14 @@ import { cn } from "@/lib/utils";
 import type { Option } from "@/lib/qualify/types";
 
 /**
+ * Two columns only earn their place when every label is short enough to sit on one or two
+ * lines; otherwise they wrap into ragged blocks and scanning gets worse, not better.
+ * Exported so the stage can widen its measure for the questions that use them.
+ */
+export const usesTwoColumns = (q: { columns?: 2; options?: Option[] }) =>
+  q.columns === 2 && Boolean(q.options) && q.options!.every((o) => o.label.length <= 42 && !o.hint);
+
+/**
  * Selectable surfaces, not radio buttons. A hairline, an index, the label and one state mark.
  * Teal is earned: it appears on selection and on focus, nowhere else.
  */
@@ -16,6 +24,8 @@ export function ChoiceList({
   onSelect,
   name,
   describedBy,
+  columns,
+  isBlocked,
 }: {
   options: Option[];
   value: string | string[] | undefined;
@@ -23,9 +33,14 @@ export function ChoiceList({
   onSelect: (v: string) => void;
   name: string;
   describedBy?: string;
+  /** Two columns from md, only honoured when every label is short enough to scan. */
+  columns?: 2;
+  /** Multi-select at its ceiling: the option is refused and said so. */
+  isBlocked?: (v: string) => boolean;
 }) {
   const selected = (v: string) => (Array.isArray(value) ? value.includes(v) : value === v);
   const listRef = useRef<HTMLDivElement>(null);
+  const twoUp = usesTwoColumns({ columns, options });
 
   /**
    * Arrow keys move between options without selecting (manual activation), because selecting
@@ -52,9 +67,17 @@ export function ChoiceList({
   };
 
   return (
-    <div ref={listRef} role={multi ? "group" : "radiogroup"} aria-labelledby={name} aria-describedby={describedBy} onKeyDown={onKeyDown} className="grid gap-2">
+    <div
+      ref={listRef}
+      role={multi ? "group" : "radiogroup"}
+      aria-labelledby={name}
+      aria-describedby={describedBy}
+      onKeyDown={onKeyDown}
+      className={cn("grid gap-2", twoUp && "md:grid-cols-2")}
+    >
       {options.map((o, i) => {
         const on = selected(o.value);
+        const blocked = !on && Boolean(isBlocked?.(o.value));
         return (
           <button
             key={o.value}
@@ -63,15 +86,18 @@ export function ChoiceList({
             data-value={o.value}
             role={multi ? "checkbox" : "radio"}
             aria-checked={on}
+            aria-disabled={blocked || undefined}
             onClick={() => onSelect(o.value)}
             className={cn(
-              "group/opt flex w-full items-start gap-4 rounded-card border px-4 py-3.5 text-left transition-[border-color,background-color] duration-(--dur-fast) md:px-5 md:py-4",
-              on ? "border-teal bg-teal/[0.07]" : "border-hairline hover:border-outline hover:bg-graphite/40",
+              "group/opt flex w-full items-start gap-4 rounded-card border px-4 py-3.5 text-left transition-[border-color,background-color,opacity] duration-(--dur-fast) md:px-5 md:py-4",
+              on ? "border-teal bg-teal/[0.07]" : blocked ? "border-hairline opacity-45" : "border-hairline hover:border-outline hover:bg-graphite/40",
             )}
           >
-            <span className={cn("text-label mt-1 w-5 shrink-0 tabular-nums transition-colors", on ? "text-teal" : "text-steel")}>{String(i + 1).padStart(2, "0")}</span>
+            <span className={cn("text-label mt-1 w-5 shrink-0 tabular-nums transition-colors", on ? "text-teal" : "text-steel")} aria-hidden>
+              {String(i + 1).padStart(2, "0")}
+            </span>
             <span className="min-w-0 flex-1">
-              <span className={cn("block text-body-xl leading-snug transition-colors", on ? "text-cloud" : "text-cloud/90")}>{o.label}</span>
+              <span className={cn("block text-body-xl leading-snug transition-colors", on ? "font-medium text-cloud" : "text-cloud/90")}>{o.label}</span>
               {o.hint && <span className="mt-1 block text-small text-steel">{o.hint}</span>}
             </span>
             <span

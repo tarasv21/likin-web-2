@@ -6,7 +6,8 @@
  * outcome shows up here. Executed by the dev-only route /api/qualify-check.
  */
 import { pricingModelOf, qualify } from "./engine";
-import { pruneAnswers, visibleQuestions } from "./flow";
+import { isAtLimit, needsCompanionText, pruneAnswers, selectionHint, setAnswer, visibleQuestions } from "./flow";
+import { QUESTIONS, questionsFor } from "./questions";
 import type { Answers, NextAction, Qualification, Service, Verdict } from "./types";
 
 type Journey = {
@@ -87,8 +88,95 @@ const JOURNEYS: Journey[] = [
 ];
 
 export type CheckResult = { name: string; ok: boolean; got: string; expected: string; score: number; reasons: string[]; pruned: string[]; note?: string };
+export type Audit = { name: string; ok: boolean; detail: string };
 
-export function runJourneys(): { results: CheckResult[]; failures: number; branches: Record<string, number> } {
+/**
+ * Structural audit of the question set. These are the invariants the UI relies on, so a
+ * question that ships without a prompt, or a multi-select without its instruction, fails
+ * here rather than in front of someone filling the form.
+ */
+export function auditQuestions(): Audit[] {
+  const out: Audit[] = [];
+  const add = (name: string, bad: string[], detail = "") => out.push({ name, ok: bad.length === 0, detail: bad.length ? bad.join(", ") : detail || "correcto" });
+
+  add("Toda pregunta tiene enunciado", QUESTIONS.filter((q) => !q.prompt || q.prompt.trim().length < 6).map((q) => q.id));
+  add("Toda pregunta de opciones tiene opciones", QUESTIONS.filter((q) => (q.kind === "single" || q.kind === "multi") && !q.options?.length).map((q) => q.id));
+  add("Las opciones tienen valor y etiqueta", QUESTIONS.flatMap((q) => (q.options ?? []).filter((o) => !o.value || !o.label).map((o) => `${q.id}:${o.value || "?"}`)));
+  add("No hay valores de opción repetidos", QUESTIONS.flatMap((q) => {
+    const seen = new Set<string>();
+    return (q.options ?? []).filter((o) => (seen.has(o.value) ? true : (seen.add(o.value), false))).map((o) => `${q.id}:${o.value}`);
+  }));
+
+  // Every multi-select must announce how many can be chosen.
+  const multis = QUESTIONS.filter((q) => q.kind === "multi");
+  add("Todo multi-select expone su instrucción", multis.filter((q) => !selectionHint(q)).map((q) => q.id));
+  add(
+    "Con límite, la instrucción dice cuántas",
+    multis.filter((q) => q.max && selectionHint(q) !== `Selecciona hasta ${q.max} opciones.`).map((q) => q.id),
+    multis.filter((q) => q.max).map((q) => `${q.id}: "${selectionHint(q)}"`).join(" · "),
+  );
+  add("Sin límite, la instrucción dice que se pueden varias", multis.filter((q) => !q.max && selectionHint(q) !== "Puedes seleccionar varias opciones.").map((q) => q.id));
+  add("Ningún single-select muestra instrucción innecesaria", QUESTIONS.filter((q) => q.kind !== "multi" && selectionHint(q) !== null).map((q) => q.id));
+
+  // "Otro" is answered in the same step, so the parent must declare where it goes.
+  add("Toda opción 'Otro' tiene campo acompañante", QUESTIONS.filter((q) => (q.options ?? []).some((o) => o.opensText) && !q.textId).map((q) => q.id));
+  add("Ningún campo acompañante es una pregunta suelta", QUESTIONS.filter((q) => QUESTIONS.some((p) => p.textId === q.id)).map((q) => q.id));
+
+  // Exclusive options, both directions.
+  const exclusiveQs = multis.filter((q) => (q.options ?? []).some((o) => o.exclusive));
+  const exclusiveBad: string[] = [];
+  for (const q of exclusiveQs) {
+    const ex = q.options!.find((o) => o.exclusive)!.value;
+    const others = q.options!.filter((o) => !o.exclusive).slice(0, 2).map((o) => o.value);
+    const service = q.scope === "SCALE" ? "SCALE" : "BUILD";
+    // pick others, then the exclusive one: only the exclusive survives
+    let a: Answers = {};
+    for (const o of others) a = setAnswer(service, a, q, o);
+    a = setAnswer(service, a, q, ex);
+    if (JSON.stringify(a[q.id]) !== JSON.stringify([ex])) exclusiveBad.push(`${q.id}: elegir exclusiva no limpió el resto`);
+    // then pick another: the exclusive must go
+    a = setAnswer(service, a, q, others[0]);
+    if ((a[q.id] as string[]).includes(ex)) exclusiveBad.push(`${q.id}: elegir otra no soltó la exclusiva`);
+  }
+  add("Las opciones exclusivas funcionan en ambos sentidos", exclusiveBad, `${exclusiveQs.length} preguntas con opción exclusiva`);
+
+  // The ceiling must refuse, not silently swap.
+  const limitBad: string[] = [];
+  for (const q of multis.filter((x) => x.max)) {
+    const service = q.scope === "SCALE" ? "SCALE" : "BUILD";
+    const picks = q.options!.filter((o) => !o.exclusive && !o.opensText).slice(0, q.max! + 1).map((o) => o.value);
+    let a: Answers = {};
+    for (const v of picks.slice(0, q.max!)) a = setAnswer(service, a, q, v);
+    const extra = picks[q.max!];
+    if (!isAtLimit(q, a, extra)) limitBad.push(`${q.id}: no detecta el tope`);
+    const after = setAnswer(service, a, q, extra);
+    if ((after[q.id] as string[]).length !== q.max) limitBad.push(`${q.id}: aceptó una de más`);
+  }
+  add("El tope de selección se respeta", limitBad);
+
+  // Companion text is required only while its option is chosen.
+  const compBad: string[] = [];
+  for (const q of QUESTIONS.filter((x) => x.textId)) {
+    const service = q.scope === "SCALE" ? "SCALE" : "BUILD";
+    const other = q.options!.find((o) => o.opensText)!.value;
+    let a = setAnswer(service, {}, q, other);
+    if (!needsCompanionText(q, a)) compBad.push(`${q.id}: no pide el campo al elegir Otro`);
+    a = setAnswer(service, a, q, other); // deselect (multi) or keep (single)
+    if (q.kind === "multi" && needsCompanionText(q, a)) compBad.push(`${q.id}: sigue pidiéndolo tras deseleccionar`);
+  }
+  add("El campo de 'Otro' aparece y desaparece con su opción", compBad);
+
+  // Every id in the order must exist, and every question must be reachable.
+  for (const service of ["BUILD", "SCALE"] as const) {
+    const list = questionsFor(service);
+    const ids = new Set(list.map((q) => q.id));
+    const unreachable = QUESTIONS.filter((q) => q.scope === service && !ids.has(q.id)).map((q) => q.id);
+    add(`Todas las preguntas de ${service} están en el orden`, unreachable, `${list.length} preguntas`);
+  }
+  return out;
+}
+
+export function runJourneys(): { results: CheckResult[]; failures: number; branches: Record<string, number>; audit: Audit[]; auditFailures: number } {
   const results: CheckResult[] = [];
   for (const j of JOURNEYS) {
     const pruned = pruneAnswers(j.service, j.answers);
@@ -129,5 +217,6 @@ export function runJourneys(): { results: CheckResult[]; failures: number; branc
     "SCALE completo": visibleQuestions("SCALE", { monthly_revenue: "25K_50K", paid_media: "YES", retention: "ACTIVE", investment_capacity: "FIXED_VARIABLE", main_bottlenecks: ["OTHER"], product_category: "OTHER" }).length,
   };
 
-  return { results, failures: results.filter((r) => !r.ok).length, branches };
+  const audit = auditQuestions();
+  return { results, failures: results.filter((r) => !r.ok).length, branches, audit, auditFailures: audit.filter((a) => !a.ok).length };
 }

@@ -57,17 +57,11 @@ const common: Question[] = [
     scope: "COMMON",
     kind: "single",
     prompt: "¿Qué tipo de productos vendes?",
+    columns: 2,
     options: PRODUCT_CATEGORIES,
     textId: "product_category_other",
-  },
-  {
-    id: "product_category_other",
-    scope: "COMMON",
-    kind: "text",
-    prompt: "¿Cuál?",
-    placeholder: "Suplementos deportivos, material de papelería…",
-    when: (a) => has(a, "product_category", "OTHER"),
-    validate: (v) => (str(v).length >= 2 ? null : "Cuéntanos en dos palabras qué vendes."),
+    textLabel: "Especifica cuál",
+    textPlaceholder: "Suplementos deportivos, material de papelería…",
   },
   {
     id: "brand_name",
@@ -135,6 +129,7 @@ const build: Question[] = [
     scope: "BUILD",
     kind: "single",
     prompt: "¿Dónde vendes actualmente?",
+    columns: 2,
     options: [
       { value: "SHOPIFY", label: "Shopify" },
       { value: "WOOCOMMERCE", label: "WooCommerce" },
@@ -160,6 +155,7 @@ const build: Question[] = [
     scope: "BUILD",
     kind: "single",
     prompt: "¿Cuántos productos necesitas subir al empezar?",
+    columns: 2,
     options: [
       { value: "1_10", label: "Entre 1 y 10" },
       { value: "11_30", label: "Entre 11 y 30" },
@@ -173,7 +169,7 @@ const build: Question[] = [
     scope: "BUILD",
     kind: "multi",
     prompt: "¿Tu tienda necesita algo fuera de lo estándar?",
-    help: "Marca todo lo que aplique. Si no lo tienes claro, dínoslo también.",
+    columns: 2,
     options: [
       { value: "STANDARD", label: "No, una tienda eCommerce estándar", exclusive: true },
       { value: "CONFIGURABLE", label: "Productos personalizados o configurables" },
@@ -192,6 +188,7 @@ const build: Question[] = [
     scope: "BUILD",
     kind: "multi",
     prompt: "¿Qué tienes preparado ya?",
+    columns: 2,
     options: [
       { value: "BRAND", label: "Logo e identidad visual" },
       { value: "PHOTOS", label: "Fotografías de producto" },
@@ -249,6 +246,7 @@ const scale: Question[] = [
     scope: "SCALE",
     kind: "single",
     prompt: "¿Cuánto factura tu eCommerce al mes?",
+    columns: 2,
     options: [
       { value: "NONE", label: "Todavía no vendo" },
       { value: "LT_5K", label: "Menos de 5.000 €" },
@@ -264,6 +262,7 @@ const scale: Question[] = [
     scope: "SCALE",
     kind: "single",
     prompt: "¿En qué plataforma está tu eCommerce?",
+    columns: 2,
     options: [
       { value: "SHOPIFY", label: "Shopify" },
       { value: "WOOCOMMERCE", label: "WooCommerce" },
@@ -288,7 +287,6 @@ const scale: Question[] = [
     kind: "multi",
     max: 2,
     prompt: "¿Cuál es vuestro principal problema ahora mismo?",
-    help: "Elige como máximo dos.",
     options: [
       { value: "MORE_CUSTOMERS", label: "Necesitamos conseguir más clientes" },
       { value: "ADS_NOT_SCALING", label: "Invertimos en Ads pero no conseguimos escalar" },
@@ -301,16 +299,9 @@ const scale: Question[] = [
       { value: "OTHER", label: "Otro", opensText: true },
     ],
     textId: "main_bottlenecks_other",
+    textLabel: "Especifica cuál",
+    textPlaceholder: "Descríbelo en una línea",
     when: (a) => !has(a, "monthly_revenue", "NONE"),
-  },
-  {
-    id: "main_bottlenecks_other",
-    scope: "SCALE",
-    kind: "text",
-    prompt: "¿Cuál?",
-    placeholder: "Descríbelo en una línea",
-    when: (a) => has(a, "main_bottlenecks", "OTHER") && !has(a, "monthly_revenue", "NONE"),
-    validate: (v) => (str(v).length >= 3 ? null : "Descríbelo en una línea."),
   },
   {
     id: "paid_media",
@@ -329,6 +320,7 @@ const scale: Question[] = [
     scope: "SCALE",
     kind: "single",
     prompt: "¿Cuánto invertís al mes, aproximadamente?",
+    columns: 2,
     options: [
       { value: "LT_1K", label: "Menos de 1.000 €" },
       { value: "1K_3K", label: "Entre 1.000 y 3.000 €" },
@@ -343,6 +335,7 @@ const scale: Question[] = [
     scope: "SCALE",
     kind: "single",
     prompt: "¿Quién gestiona las campañas?",
+    columns: 2,
     options: [
       { value: "INTERNAL", label: "Nosotros internamente" },
       { value: "FREELANCER", label: "Un freelancer" },
@@ -369,6 +362,7 @@ const scale: Question[] = [
     scope: "SCALE",
     kind: "single",
     prompt: "¿Conoces la tasa de conversión de la tienda?",
+    columns: 2,
     options: [
       { value: "LT_1", label: "Menos del 1 %" },
       { value: "1_2", label: "Entre el 1 y el 2 %" },
@@ -396,6 +390,7 @@ const scale: Question[] = [
     scope: "SCALE",
     kind: "single",
     prompt: "¿Qué herramienta utilizáis?",
+    columns: 2,
     options: [
       { value: "KLAVIYO", label: "Klaviyo" },
       { value: "SHOPIFY_EMAIL", label: "Shopify Email" },
@@ -410,6 +405,7 @@ const scale: Question[] = [
     scope: "SCALE",
     kind: "multi",
     prompt: "¿Quién trabaja hoy en el crecimiento del eCommerce?",
+    columns: 2,
     options: [
       { value: "FOUNDER", label: "El fundador o fundadora" },
       { value: "INTERNAL_MARKETING", label: "Equipo interno de marketing" },
@@ -426,7 +422,6 @@ const scale: Question[] = [
     kind: "multi",
     max: 2,
     prompt: "¿Qué esperas de Likin?",
-    help: "Elige como máximo dos.",
     options: [
       { value: "PAID_MEDIA", label: "Gestionar y escalar Paid Media" },
       { value: "CRO", label: "Mejorar la conversión" },
@@ -505,7 +500,6 @@ const BUILD_ORDER = [
   "build_platform",
   "build_store_url",
   "product_category",
-  "product_category_other",
   "brand_name",
   "brand_link",
   "product_count",
@@ -522,11 +516,9 @@ const SCALE_ORDER = [
   "platform",
   "store_url",
   "product_category",
-  "product_category_other",
   "brand_name",
   "brand_link",
   "main_bottlenecks",
-  "main_bottlenecks_other",
   "paid_media",
   "monthly_ad_spend",
   "ads_managed_by",

@@ -4,10 +4,10 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
 import { ArrowLeft, Spinner } from "@/components/ui/Icons";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
-import { ChoiceList, LabelledField, TextField } from "./Fields";
+import { ChoiceList, LabelledField, TextField, usesTwoColumns } from "./Fields";
 import { ResultScreen } from "./ResultScreen";
 import { collectsContact, isTerminal, qualify } from "@/lib/qualify/engine";
-import { progressOf, setAnswer, validateAnswer, visibleQuestions } from "@/lib/qualify/flow";
+import { isAtLimit, needsCompanionText, progressOf, selectionHint, setAnswer, validateAnswer, visibleQuestions } from "@/lib/qualify/flow";
 import { track } from "@/lib/qualify/events";
 import { clearSession, loadSession, readAttribution, saveSession } from "@/lib/qualify/session";
 import { buildLead, submitLead } from "@/lib/qualify/submit";
@@ -38,6 +38,7 @@ export function QualifyFlow({ service, source, onClose, onSwitchToBuild }: { ser
   const [sendError, setSendError] = useState<string | null>(null);
   const [stored, setStored] = useState(false);
   const [leaving, setLeaving] = useState<"forward" | "back" | null>(null);
+  const [limitNotice, setLimitNotice] = useState<string | null>(null);
   const honeypot = useRef("");
   const attribution = useRef(readAttribution(source));
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -124,6 +125,7 @@ export function QualifyFlow({ service, source, onClose, onSwitchToBuild }: { ser
   const goBack = useCallback(() => {
     setError(null);
     setSendError(null);
+    setLimitNotice(null);
     if (phase === "contact") {
       animateTo("back", () => setPhase("questions"));
       return;
@@ -135,6 +137,13 @@ export function QualifyFlow({ service, source, onClose, onSwitchToBuild }: { ser
     (value: string) => {
       if (!question) return;
       const next = setAnswer(service, answers, question, value);
+      if (next === answers && isAtLimit(question, answers, value)) {
+        // Refused at the ceiling. Tell them how to change their mind instead of doing nothing.
+        setLimitNotice(`Solo puedes elegir ${question.max}. Quita una para seleccionar otra.`);
+        window.setTimeout(() => setLimitNotice(null), 3500);
+        return;
+      }
+      setLimitNotice(null);
       setAnswers(next);
       setError(null);
       // A single choice with nothing else to fill in advances on its own, after a beat that
@@ -211,6 +220,9 @@ export function QualifyFlow({ service, source, onClose, onSwitchToBuild }: { ser
   const terminal = isTerminal(service, answers);
   const totalSteps = terminal ? index + 1 : visible.length + 1; // + contact, unless a gate ended it
   const stepNow = phase === "result" ? totalSteps : phase === "contact" ? totalSteps : (progress?.step ?? 1);
+  const ratio = phase === "result" ? 1 : Math.min(1, stepNow / Math.max(totalSteps, 1));
+  // Two-column steps get a wider measure; single-column keeps a comfortable reading width.
+  const wideMeasure = phase === "questions" && Boolean(question) && usesTwoColumns(question);
   const canGoBack = phase === "contact" || (phase === "questions" && index > 0);
 
   const motionClass = reduced ? "" : leaving === "forward" ? "qz-out-up" : leaving === "back" ? "qz-out-down" : "qz-in";
@@ -222,15 +234,13 @@ export function QualifyFlow({ service, source, onClose, onSwitchToBuild }: { ser
         <div className="flex items-baseline justify-between gap-4">
           <p className="text-label text-teal">{service === "BUILD" ? "Likin Build" : "Likin Scale"}</p>
           <p className="text-label tabular-nums text-steel" aria-hidden>
-            {phase === "result" ? "—" : `${String(stepNow).padStart(2, "0")} — ${String(totalSteps).padStart(2, "0")}`}
+            {phase === "result" ? "Listo" : `Paso ${String(stepNow).padStart(2, "0")}`}
           </p>
         </div>
-        <div className="mt-2.5 flex gap-1" aria-hidden>
-          {phase === "result" ? (
-            <span className="h-px flex-1 bg-teal" />
-          ) : (
-            Array.from({ length: totalSteps }, (_, i) => <span key={i} className={cn("h-px flex-1 transition-colors duration-(--dur)", i < stepNow - 1 ? "bg-teal" : i === stepNow - 1 ? "bg-teal/50" : "bg-hairline")} />)
-          )}
+        {/* A continuous bar, not a countdown. The number of questions depends on the branch,
+            so a fixed total would be a promise the form cannot keep. */}
+        <div className="mt-2.5 h-px w-full bg-hairline" aria-hidden>
+          <div className="h-px bg-teal transition-[width] duration-(--dur) ease-(--ease-out)" style={{ width: `${Math.round(ratio * 100)}%` }} />
         </div>
         <p className="sr-only" aria-live="polite">
           {phase === "result" ? "Resultado" : `Paso ${stepNow} de ${totalSteps}`}
@@ -238,10 +248,32 @@ export function QualifyFlow({ service, source, onClose, onSwitchToBuild }: { ser
       </div>
 
       {/* Stage */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-(--spacing-gutter) py-6 md:justify-center md:py-10">
-        <div key={`${phase}-${index}`} className={cn("mx-auto w-full max-w-[42rem]", motionClass)}>
+      <div className="flex min-h-0 flex-1 px-(--spacing-gutter) py-6 md:py-8">
+        {/* m-auto centres a short step and, when the content is taller than the space, caps at
+            max-h-full so the question header stays put and only the answers scroll. A
+            justify-center here would push the heading above the scroll origin, out of reach. */}
+        <div key={`${phase}-${index}`} className={cn("m-auto flex max-h-full w-full min-h-0 flex-col", wideMeasure ? "max-w-[52rem]" : "max-w-[42rem]", motionClass)}>
           {stage.kind === "question" && stage.q && (
-            <QuestionView q={stage.q} answers={answers} error={error} titleId={titleId} headingRef={headingRef} onChoose={choose} onText={(v) => { setAnswers((a) => ({ ...a, [stage.q.id]: v })); setError(null); }} onEnter={goNext} />
+            <QuestionView
+              q={stage.q}
+              answers={answers}
+              error={error}
+              limitNotice={limitNotice}
+              titleId={titleId}
+              headingRef={headingRef}
+              onChoose={choose}
+              onText={(v) => {
+                setAnswers((a) => ({ ...a, [stage.q.id]: v }));
+                setError(null);
+              }}
+              onCompanion={(v) => {
+                const id = stage.q.textId;
+                if (!id) return;
+                setAnswers((a) => ({ ...a, [id]: v }));
+                setError(null);
+              }}
+              onEnter={goNext}
+            />
           )}
 
           {stage.kind === "contact" && (
@@ -334,70 +366,132 @@ function Consent({ checked, onChange, children, error }: { checked: boolean; onC
   );
 }
 
+/**
+ * Standard layout for every step, in one place so no screen can ever drift from it:
+ *
+ *   QUESTION            always visible, never scrolls away
+ *   HELP                when the prompt cannot carry it
+ *   INSTRUCTION         derived from the kind, so a multi-select always says so
+ *   NOTE                framed, when there is a figure to state up front
+ *   ─────────────
+ *   OPTIONS / INPUT     the only part that scrolls
+ *   COMPANION TEXT      inline, same step, when "Otro" is chosen
+ *   ERROR
+ */
 function QuestionView({
   q,
   answers,
   error,
+  limitNotice,
   titleId,
   headingRef,
   onChoose,
   onText,
+  onCompanion,
   onEnter,
 }: {
   q: Question;
   answers: Answers;
   error: string | null;
+  limitNotice: string | null;
   titleId: string;
   headingRef: React.RefObject<HTMLHeadingElement | null>;
   onChoose: (v: string) => void;
   onText: (v: string) => void;
+  onCompanion: (v: string) => void;
   onEnter: () => void;
 }) {
   const value = answers[q.id];
   const errId = `${titleId}-err`;
   const helpId = `${titleId}-help`;
-  return (
-    <div>
-      <h2 id={titleId} ref={headingRef} tabIndex={-1} className="text-h3 max-w-[22ch] outline-none">
-        {q.prompt}
-      </h2>
-      {q.help && (
-        <p id={helpId} className="mt-3 max-w-[48ch] text-body text-steel">
-          {q.help}
-        </p>
-      )}
-      {q.note && <p className="text-label mt-4 inline-block rounded-[8px] border border-teal/30 bg-teal/[0.07] px-3 py-2 text-teal">{q.note}</p>}
+  const hintId = `${titleId}-hint`;
+  const hint = selectionHint(q);
+  const isChoice = (q.kind === "single" || q.kind === "multi") && Boolean(q.options);
+  const showCompanion = needsCompanionText(q, answers);
 
-      <div className="mt-7">
-        {(q.kind === "single" || q.kind === "multi") && q.options && (
-          <ChoiceList options={q.options} value={value} multi={q.kind === "multi"} onSelect={onChoose} name={titleId} describedBy={error ? errId : q.help ? helpId : undefined} />
+  return (
+    <>
+      {/* Header — outside the scroll area on purpose. */}
+      <div className="shrink-0">
+        <h2 id={titleId} ref={headingRef} tabIndex={-1} className="text-h3 max-w-[24ch] text-balance outline-none">
+          {q.prompt}
+        </h2>
+        {q.help && (
+          <p id={helpId} className="mt-3 max-w-[52ch] text-body text-steel">
+            {q.help}
+          </p>
         )}
-        {(q.kind === "text" || q.kind === "url") && (
+        {hint && (
+          <p id={hintId} className={cn("mt-2 text-small transition-colors duration-(--dur-fast)", limitNotice ? "text-teal" : "text-steel/85")}>
+            {limitNotice ?? hint}
+          </p>
+        )}
+        {/* Announced separately so the change is spoken, not just seen. */}
+        <p className="sr-only" aria-live="polite">
+          {limitNotice ?? ""}
+        </p>
+        {q.note && <p className="text-label mt-4 inline-block rounded-[8px] border border-teal/30 bg-teal/[0.07] px-3 py-2 text-teal">{q.note}</p>}
+      </div>
+
+      {/* Answers — the only scrolling region, with a stable gutter so nothing jumps. */}
+      <div className="qz-scroll mt-6 min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1 md:mt-7">
+        {isChoice && (
+          <ChoiceList
+            options={q.options!}
+            value={value}
+            multi={q.kind === "multi"}
+            columns={q.columns}
+            onSelect={onChoose}
+            name={titleId}
+            isBlocked={(v) => isAtLimit(q, answers, v)}
+            describedBy={error ? errId : hint ? hintId : q.help ? helpId : undefined}
+          />
+        )}
+        {!isChoice && (
           <TextField
             value={typeof value === "string" ? value : ""}
             onChange={onText}
             onEnter={onEnter}
             placeholder={q.placeholder}
-            type={q.kind === "url" ? "text" : "text"}
-            inputMode={q.kind === "url" ? "url" : "text"}
+            inputMode={q.kind === "url" ? "url" : q.kind === "email" ? "email" : "text"}
             labelledBy={titleId}
             describedBy={error ? errId : q.help ? helpId : undefined}
             invalid={Boolean(error)}
             autoFocus
           />
         )}
-      </div>
 
-      {q.kind === "multi" && q.max && (
-        <p className="text-label mt-3 text-steel" aria-hidden>
-          Máximo {q.max}
-        </p>
-      )}
-      {error && (
-        <p id={errId} role="alert" className="mt-3 text-small text-danger">
-          {error}
-        </p>
-      )}
-    </div>
+        {/* "Otro": resolved here, not on a screen of its own. */}
+        {showCompanion && q.textId && (
+          <div className="qz-in mt-3 rounded-card border border-teal/30 bg-teal/[0.04] p-4">
+            <LabelledField label={q.textLabel ?? "Especifica cuál"}>
+              {(id, d) => (
+                <input
+                  id={id}
+                  aria-describedby={d}
+                  autoFocus
+                  value={typeof answers[q.textId!] === "string" ? (answers[q.textId!] as string) : ""}
+                  onChange={(e) => onCompanion(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      onEnter();
+                    }
+                  }}
+                  placeholder={q.textPlaceholder}
+                  className="h-12 w-full rounded-[10px] border border-hairline bg-transparent px-3.5 text-body text-cloud outline-none transition-colors placeholder:text-steel/70 focus:border-teal"
+                />
+              )}
+            </LabelledField>
+          </div>
+        )}
+
+        {error && (
+          <p id={errId} role="alert" className="mt-3 text-small text-danger">
+            {error}
+          </p>
+        )}
+      </div>
+    </>
   );
 }

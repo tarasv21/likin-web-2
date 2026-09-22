@@ -117,7 +117,11 @@ export type Lead = {
 
 /* ── Questions ───────────────────────────────────────────────────────────── */
 
-export type QuestionKind = "single" | "multi" | "text" | "url" | "contact";
+/**
+ * The kind drives both rendering and how the UI explains the interaction, so an instruction
+ * like "puedes seleccionar varias" is never written by hand in a component.
+ */
+export type QuestionKind = "single" | "multi" | "text" | "url" | "email" | "contact";
 
 export type Option = {
   value: string;
@@ -141,12 +145,22 @@ export type Question = {
   /** A short framed note shown above the options (e.g. the BUILD price). */
   note?: string;
   options?: Option[];
-  /** Multi-select ceiling. */
+  /** Multi-select ceiling. The UI announces it and refuses the one over the limit. */
   max?: number;
+  /**
+   * Two columns from md. Only for sets of short labels where scanning improves; the UI
+   * still falls back to one column if any label is long. Never on mobile.
+   */
+  columns?: 2;
   placeholder?: string;
   optional?: boolean;
-  /** Id of the companion text answer when an option has `opensText`. */
+  /**
+   * Companion free-text answer shown inline, in the same step, when an option with
+   * `opensText` is chosen. Never a screen of its own.
+   */
   textId?: string;
+  textLabel?: string;
+  textPlaceholder?: string;
   /** Shown only when this returns true. Drives both branching and stale-answer pruning. */
   when?: (a: Answers) => boolean;
   /** Returns an error message, or null when valid. */
