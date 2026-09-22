@@ -3,7 +3,15 @@
 import { usePathname } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useJsFlag } from "@/lib/hooks";
-import { LeadDrawer, type LeadTrack } from "./LeadDrawer";
+import dynamic from "next/dynamic";
+
+/** The qualification system is only needed once someone acts on a CTA: keep it out of the
+ *  first load of every page and fetch it when the sheet is first opened. */
+const QualifySheet = dynamic(() => import("@/components/qualify/QualifySheet").then((m) => m.QualifySheet), { ssr: false });
+import type { Service } from "@/lib/qualify/types";
+
+/** Kept for the existing CTAs across the site. */
+export type LeadTrack = "build" | "scale";
 
 type LeadCtx = { openLead: (track?: LeadTrack, source?: string) => void };
 const Ctx = createContext<LeadCtx>({ openLead: () => {} });
@@ -15,13 +23,17 @@ export function Providers({ children }: { children: ReactNode }) {
   useJsFlag();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const [track, setTrack] = useState<LeadTrack | null>(null);
+  // Stays true after the first open so closing does not unload the chunk.
+  const [mounted, setMounted] = useState(false);
+  const [service, setService] = useState<Service | null>(null);
   const [source, setSource] = useState("");
 
   const openLead = useCallback(
     (t?: LeadTrack, s?: string) => {
-      setTrack(t ?? null);
+      // A BUILD or SCALE CTA already answers the first question: never ask it again.
+      setService(t === "build" ? "BUILD" : t === "scale" ? "SCALE" : null);
       setSource(s ? `${pathname}#${s}` : pathname);
+      setMounted(true);
       setOpen(true);
     },
     [pathname],
@@ -46,7 +58,7 @@ export function Providers({ children }: { children: ReactNode }) {
   return (
     <Ctx.Provider value={value}>
       {children}
-      <LeadDrawer open={open} track={track} source={source} onClose={close} onTrack={setTrack} />
+      {mounted && <QualifySheet open={open} service={service} source={source} onClose={close} onService={setService} />}
     </Ctx.Provider>
   );
 }

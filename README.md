@@ -14,7 +14,7 @@ npm run typecheck  # tsc
 npm run lint       # eslint
 ```
 
-Variables de entorno opcionales en `.env.example`. `LEAD_WEBHOOK_URL` reenvía cada lead a un webhook (Make, Zapier, n8n, Slack…). Sin ella, los leads solo se registran en el log del servidor.
+Variables de entorno opcionales en `.env.example`. `LEAD_WEBHOOK_URL` reenvía cada lead a un webhook (Make, Zapier, n8n, Slack…). Sin ella no se guarda nada y el formulario se lo dice al usuario en vez de prometer una respuesta.
 
 ## Rutas
 
@@ -26,7 +26,8 @@ Variables de entorno opcionales en `.env.example`. `LEAD_WEBHOOK_URL` reenvía c
 | `/work` | Casos de éxito (con filtros Crear / Escalar) |
 | `/work/[slug]` | Caso individual (16 casos, estáticos) |
 | `/aviso-legal`, `/privacidad`, `/cookies` | Legales (placeholders, `noindex`) |
-| `/api/lead` | POST del formulario de contacto |
+| `/api/lead` | POST del formulario de cualificación |
+| `/api/qualify-check` | Suite de regresión del motor (solo en desarrollo) |
 
 `sitemap.xml`, `robots.txt` y la imagen Open Graph se generan en `src/app/`.
 
@@ -38,7 +39,7 @@ src/
   components/
     brand/        Logo, Fingerprint (SVG real), FingerprintStage + HeroScene (3D)
     layout/       Header, Footer, LeadDrawer, StickyCta, Providers
-    forms/        MultiStep, BuildForm, ScaleForm
+    qualify/      hoja, flujo, campos y pantallas de resultado
     home/ build/ scale/ work/   secciones de cada página
     ui/           Button, Reveal, Modal, Faq, Marquee, Frames, Icons…
   data/           site.ts (rutas, CTAs, precios, contacto), cases.ts, clients.ts,
@@ -74,9 +75,52 @@ Sin argumento usan la ruta local original. `npm run assets` también escribe `sr
 - `Fingerprint` la dibuja como SVG (crestas individuales, se pueden iluminar).
 - `FingerprintStage` muestra el render metálico (WebP con alpha) como LCP y experiencia completa en móvil / reduced motion / sin WebGL; en escritorio con puntero fino carga la escena Three.js (`HeroScene`) tras 900 ms y hace crossfade.
 
-## Leads
+## Cualificación de leads
 
-`useLead().openLead(track?, source?)` abre el drawer desde cualquier componente. Deep links: `#lead`, `#lead-build`, `#lead-scale`. El formulario valida en cliente y servidor, tiene honeypot y no depende de ningún CRM.
+`useLead().openLead(track?, source?)` abre el formulario desde cualquier CTA. Con `"build"` o `"scale"` salta la pregunta de servicio. Deep links: `#lead`, `#lead-build`, `#lead-scale`.
+
+No es un formulario de contacto: es un sistema de precualificación con lógica condicional, veredicto y pantallas de resultado distintas. Los datos de contacto se piden al final y solo cuando el veredicto lo justifica.
+
+```
+src/lib/qualify/
+  types.ts      modelo de datos del lead (el que recibirá el CRM)
+  questions.ts  preguntas y opciones. CONTENIDO: editar aquí para añadir o quitar
+  flow.ts       qué preguntas se ven, validación y poda de ramas obsoletas
+  engine.ts     veredicto y puntuación. Todos los pesos y reglas, en un sitio
+  events.ts     capa de analítica agnóstica, con lista blanca anti-PII
+  session.ts    recuperación en la pestaña (solo respuestas no personales) y UTMs
+  submit.ts     ensamblado del lead y única salida a servidor
+  config.ts     URLs de Stripe y Calendly
+  journeys.ts   suite de regresión del motor
+src/components/qualify/   UI (hoja, flujo, campos, resultados)
+```
+
+### Añadir o cambiar una pregunta
+
+Edita `questions.ts` y añade el id al orden de `BUILD_ORDER` o `SCALE_ORDER`. Una pregunta condicional se declara con `when: (a) => ...`. No hay que tocar la UI: el flujo la muestra, el progreso se recalcula y, si su rama deja de ser válida, la respuesta se borra sola.
+
+### Veredictos y acciones
+
+| Veredicto | Acción | Pantalla |
+| --- | --- | --- |
+| `READY` (BUILD) | `STRIPE` | Checkout directo, o aviso honesto si aún no hay URL |
+| `HIGH_FIT` / `FIT` | `BOOK_CALL` | Reserva de reunión, o aviso si aún no hay Calendly |
+| `REVIEW` | `MANUAL_REVIEW` | Lo revisamos antes de responder |
+| `NOT_READY` | `NURTURE` / `CLOSED` | Cierre profesional, sin pedir datos personales |
+
+La clasificación interna (`lead_score`, `qualification_reasons`) nunca se muestra.
+
+Ejecuta la suite de regresión con el servidor de desarrollo en marcha:
+
+```bash
+curl -s localhost:3000/api/qualify-check | python3 -m json.tool
+```
+
+### Conectar Stripe, Calendly y el CRM
+
+Stripe y Calendly son variables públicas en `.env.example`. Mientras estén vacías, las pantallas muestran una alternativa por email y nunca un enlace inventado.
+
+Para el CRM, sustituye el reenvío de `src/app/api/lead/route.ts` por la llamada a tu API. El secreto vive ahí, en servidor. La respuesta debe devolver `stored: true` solo si el lead se ha guardado de verdad: la interfaz lo dice al usuario tal cual.
 
 ## QA
 

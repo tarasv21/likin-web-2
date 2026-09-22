@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import { useLead } from "./Providers";
-import type { LeadTrack } from "./LeadDrawer";
+import type { LeadTrack } from "./Providers";
 
 export function ContactLink({ children, className, source, track }: { children: ReactNode; className?: string; source: string; track?: LeadTrack }) {
   const { openLead } = useLead();

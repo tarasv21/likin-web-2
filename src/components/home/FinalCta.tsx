@@ -5,7 +5,7 @@ import { FingerprintStage } from "@/components/brand/FingerprintStage";
 import { Button } from "@/components/ui/Button";
 import { useLead } from "@/components/layout/Providers";
 import { useReducedMotion } from "@/lib/hooks";
-import type { LeadTrack } from "@/components/layout/LeadDrawer";
+import type { LeadTrack } from "@/components/layout/Providers";
 
 /**
  * FINAL CTA — the circle closes: absolute black, the metal print returns with different light.

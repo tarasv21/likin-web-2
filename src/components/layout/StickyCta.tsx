@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ArrowRight } from "@/components/ui/Icons";
-import type { LeadTrack } from "./LeadDrawer";
+import type { LeadTrack } from "./Providers";
 import { useLead } from "./Providers";
 import { cn } from "@/lib/utils";
 
