@@ -46,7 +46,7 @@ const PATTERNS = [
   ["Stripe live key", /(?:sk|rk)_live_[A-Za-z0-9]{20,}/],
   ["Google API key", /AIza[0-9A-Za-z_-]{35}/],
   ["Slack token", /xox[baprs]-[A-Za-z0-9-]{10,}/],
-  ["Assigned secret in env syntax", /^(?:SUPABASE_SERVICE_ROLE_KEY|SUPABASE_DB_URL|SEED_DEMO_PASSWORD|SUPABASE_SECRET_KEY|CRM_INGEST_PROOF|CRM_INGEST_WEB_KEYS|CRM_INGEST_SECRET)\s*=\s*\S{8,}/m],
+  ["Assigned secret in env syntax", /^(?:SUPABASE_SERVICE_ROLE_KEY|SUPABASE_DB_URL|SEED_DEMO_PASSWORD|SUPABASE_SECRET_KEY|CRM_INGEST_PROOF|CRM_INGEST_WEB_KEYS|CRM_INGEST_SECRET|CRM_INGEST_BYPASS_SECRET|CRON_SECRET)\s*=\s*\S{8,}/m],
   ["Lead Ingestion website HMAC key", /lkw_[A-Za-z0-9_-]{40,}/],
   ["Lead Ingestion proof token", /lkp_[A-Za-z0-9_-]{40,}/],
 ];
