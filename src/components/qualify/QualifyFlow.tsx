@@ -12,7 +12,7 @@ import { track } from "@/lib/qualify/events";
 import { clearSession, loadSession, readAttribution, saveSession } from "@/lib/qualify/session";
 import { buildLead, submitLead } from "@/lib/qualify/submit";
 import { useReducedMotion } from "@/lib/hooks";
-import type { Answers, Contact, Question, Service, Verdict } from "@/lib/qualify/types";
+import type { Answers, Contact, Lead, Question, Service, Verdict } from "@/lib/qualify/types";
 
 type Stage = { kind: "question"; q: Question } | { kind: "contact" } | { kind: "result" };
 
@@ -41,6 +41,13 @@ export function QualifyFlow({ service, source, onClose, onSwitchToBuild }: { ser
   const [limitNotice, setLimitNotice] = useState<string | null>(null);
   const honeypot = useRef("");
   const attribution = useRef(readAttribution(source));
+  // The submission being sent: kept (same id, same time) while its content does not change, so a
+  // retry after a failure is the SAME logical submission for the CRM (idempotent), and a changed
+  // form is a new one.
+  const pending = useRef<{ key: string; lead: Lead } | null>(null);
+  // Synchronous guard: two clicks in the same frame both see `sending === false` (state updates
+  // land on the next render), so the ref is what really stops a second request.
+  const inFlight = useRef(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const formRef = useRef<HTMLDivElement>(null);
   const startedRef = useRef(false);
@@ -199,16 +206,21 @@ export function QualifyFlow({ service, source, onClose, onSwitchToBuild }: { ser
   };
 
   const send = async () => {
-    if (!validateContact() || sending) return;
+    if (!validateContact() || sending || inFlight.current) return;
+    inFlight.current = true;
     setSending(true);
     setSendError(null);
-    const lead = buildLead({ service, answers, verdict, attribution: attribution.current, contact });
+    const key = JSON.stringify({ service, answers, contact });
+    if (pending.current?.key !== key) pending.current = { key, lead: buildLead({ service, answers, verdict, attribution: attribution.current, contact }) };
+    const lead = pending.current.lead;
     const res = await submitLead(lead, honeypot.current);
+    inFlight.current = false;
     setSending(false);
     if (!res.ok) {
       setSendError(res.error);
       return;
     }
+    pending.current = null;
     setStored(res.stored);
     track("qualification_submitted", { service, qualification: verdict.qualification, next_action: verdict.next_action, lead_score: verdict.lead_score, reasons: verdict.qualification_reasons, ok: true });
     if (verdict.requires_manual_review) track("manual_review_submitted", { service, qualification: verdict.qualification });
