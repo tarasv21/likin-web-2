@@ -14,7 +14,11 @@ npm run typecheck  # tsc
 npm run lint       # eslint
 ```
 
-Variables de entorno opcionales en `.env.example`. `LEAD_WEBHOOK_URL` reenvía cada lead a un webhook (Make, Zapier, n8n, Slack…). Sin ella no se guarda nada y el formulario se lo dice al usuario en vez de prometer una respuesta.
+Variables de entorno opcionales en `.env.example`. `CRM_INGEST_URL`, `CRM_INGEST_KEY_ID` y `CRM_INGEST_SECRET` envían cada lead a LIKIN CRM (firmado, solo servidor); `RESEND_API_KEY` y `LEAD_EMAIL_FROM` activan el email de respaldo; `LEAD_WEBHOOK_URL` reenvía cada lead a un webhook (Make, Zapier, n8n, Slack…). Sin ninguna no se guarda nada y el formulario se lo dice al usuario en vez de prometer una respuesta.
+
+```bash
+npm test         # relay al CRM, payload, email de respaldo, origen de la visita (sin red)
+```
 
 ## Rutas
 
@@ -120,7 +124,15 @@ curl -s localhost:3000/api/qualify-check | python3 -m json.tool
 
 Stripe y Calendly son variables públicas en `.env.example`. Mientras estén vacías, las pantallas muestran una alternativa por email y nunca un enlace inventado.
 
-Para el CRM, sustituye el reenvío de `src/app/api/lead/route.ts` por la llamada a tu API. El secreto vive ahí, en servidor. La respuesta debe devolver `stored: true` solo si el lead se ha guardado de verdad: la interfaz lo dice al usuario tal cual.
+**LIKIN CRM** (`src/lib/crm/`, llamado desde `src/app/api/lead/route.ts`):
+
+- `canonical.ts` convierte el lead en el contrato `lead-input@1` del CRM, de forma determinista: el mismo envío produce siempre los mismos bytes. El `lead_id` del navegador es el `event_id` y se conserva mientras el contenido no cambie, así que un reintento o un doble clic es el mismo envío y el CRM guarda uno.
+- `relay.ts` firma el cuerpo con HMAC-SHA256 (`v1=hex(HMAC(secreto, "<timestamp>.<cuerpo>"))`, cabeceras `x-likin-key-id`, `x-likin-timestamp`, `x-likin-signature`) y lo envía con 3 intentos (4 s cada uno, 7 s en total) solo ante red, timeout, 429 o 5xx. Estados: `processed`, `duplicate`, `received` (guardado en la bandeja del CRM, todavía no es un lead), `rejected`, `retryable_failure`, `unreachable`.
+- `fallback-email.ts` manda el email de respaldo cuando el CRM no confirmó, diciendo si el lead está o no en el CRM.
+- `deliver.ts` decide qué se le dice al visitante: `stored: true` solo si algo durable tiene el lead (CRM, webhook o email). Si no, 502 y el formulario conserva los datos para reintentar.
+- `src/lib/attribution/landing.ts` guarda el origen de la visita al aterrizar (UTMs, `utm_id`, click ids, ruta sin query, referrer externo) en `sessionStorage`, solo durante la visita.
+
+La clave HMAC es de esta web y solo vive en su servidor; nunca va al navegador ni a una variable `NEXT_PUBLIC_*`. Rotación, revocación y qué hacer si se filtra: `likin-crm/docs/LEAD_INGESTION_DESIGN.md` §11.2.
 
 ## QA
 
@@ -138,4 +150,4 @@ npx lighthouse http://localhost:3000/ --output=json --output-path=qa/lh/home.jso
 
 - Textos legales definitivos (aviso legal, privacidad, cookies).
 - Transcripciones / subtítulos de los testimonios en vídeo.
-- Destino de los leads (webhook o CRM) cuando se decida.
+- Conectar la web de producción al CRM (variables de arriba en Vercel) cuando el CRM esté en producción, con el respaldo por email configurado y las políticas de privacidad y cookies actualizadas.

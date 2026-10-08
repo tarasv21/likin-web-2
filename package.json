@@ -10,7 +10,9 @@
     "typecheck": "tsc --noEmit",
     "assets": "node scripts/prepare-assets.mjs",
     "videos": "node scripts/encode-videos.mjs",
-    "qa": "node scripts/qa-shot.mjs"
+    "qa": "node scripts/qa-shot.mjs",
+    "test": "node --import ./tests/register.mjs --test tests/*.test.mjs",
+    "secret-scan": "node scripts/secret-scan.mjs"
   },
   "dependencies": {
     "geist": "^1.7.2",

@@ -1,0 +1,38 @@
+# Minimal CI: no secrets and no network calls to the CRM (the relay tests fake fetch).
+# Secret scan of the tree and of the whole history, lint, types, tests, build.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Secret scan (working tree)
+        run: npm run secret-scan
+      - name: Secret scan (whole history)
+        run: npm run secret-scan -- --history
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
