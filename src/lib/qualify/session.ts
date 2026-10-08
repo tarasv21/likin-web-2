@@ -7,6 +7,7 @@
  */
 import type { Answers, Attribution, Service } from "./types";
 import { QUESTIONS } from "./questions";
+import { readLanding } from "@/lib/attribution/landing";
 
 const KEY = "likin.qualify.v1";
 const MAX_AGE_MS = 1000 * 60 * 60 * 2; // two hours inside the same tab
@@ -52,19 +53,25 @@ export function clearSession() {
   }
 }
 
-/** UTM parameters and referrer, read at open time. */
+/**
+ * Attribution of the lead: the landing touch captured when the visit began (src/lib/attribution/
+ * landing.ts), so UTMs and click ids survive internal navigation; the current URL is only a
+ * fallback for a visit whose landing was not captured.
+ */
 export function readAttribution(source: string): Attribution {
   if (typeof window === "undefined") return { source, landing_page: "" };
+  const touch = readLanding() ?? undefined;
   const p = new URLSearchParams(window.location.search);
   const get = (k: string) => p.get(k)?.slice(0, 120) || undefined;
   return {
     source,
     landing_page: window.location.pathname,
-    utm_source: get("utm_source"),
-    utm_medium: get("utm_medium"),
-    utm_campaign: get("utm_campaign"),
-    utm_content: get("utm_content"),
-    utm_term: get("utm_term"),
-    referrer: document.referrer ? document.referrer.slice(0, 200) : undefined,
+    utm_source: touch?.utm_source ?? get("utm_source"),
+    utm_medium: touch?.utm_medium ?? get("utm_medium"),
+    utm_campaign: touch?.utm_campaign ?? get("utm_campaign"),
+    utm_content: touch?.utm_content ?? get("utm_content"),
+    utm_term: touch?.utm_term ?? get("utm_term"),
+    referrer: touch?.referrer_host ?? (document.referrer ? document.referrer.slice(0, 200) : undefined),
+    touch,
   };
 }
