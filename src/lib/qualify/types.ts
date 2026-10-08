@@ -54,6 +54,20 @@ export type LandingTouch = {
   fbclid?: string;
   gclid?: string;
   ttclid?: string;
+  /** Arrival from tarasvasyliv.com in this visit (OD-16): the hop, its CTA and the origin it reported. */
+  cross?: CrossSiteHop;
+};
+
+/**
+ * A hop from tarasvasyliv.com to this site. `origin` is what that site reported about how the
+ * person reached IT (campaign parameters and referrer host only; never click ids). Untrusted.
+ */
+export type CrossSiteHop = {
+  site: "tarasvasyliv.com";
+  cta?: string;
+  at: string;
+  landing_path: string;
+  origin?: { utm_source?: string; utm_medium?: string; utm_campaign?: string; utm_content?: string; referrer_host?: string };
 };
 
 export type Attribution = {

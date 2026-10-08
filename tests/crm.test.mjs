@@ -7,10 +7,10 @@ import { describe, test } from "node:test";
 import assert from "node:assert/strict";
 import { createHmac } from "node:crypto";
 import { crmConfigFromEnv, isInCrm, relayToCrm, signBody } from "../src/lib/crm/relay.ts";
-import { boundedAnswers, toLeadInput } from "../src/lib/crm/canonical.ts";
+import { boundedAnswers, crossSiteTouches, toLeadInput } from "../src/lib/crm/canonical.ts";
 import { crmStatusLine, emailConfigFromEnv, fallbackEmail, sendFallbackEmail } from "../src/lib/crm/fallback-email.ts";
 import { deliverLead } from "../src/lib/crm/deliver.ts";
-import { touchFrom } from "../src/lib/attribution/landing.ts";
+import { nextLanding, touchFrom } from "../src/lib/attribution/landing.ts";
 import { createLimiter } from "../src/lib/crm/rate-limit.ts";
 
 const SECRET = "test-secret-not-a-real-key-0123456789abcdef";
@@ -242,11 +242,33 @@ describe("delivery decision (what the visitor is told)", () => {
     const none = await deliverLead(lead(), deps({}, fakeFetch({})));
     assert.deepEqual({ stored: none.stored, configured: none.configured }, { stored: false, configured: false });
   });
-  test("legacy webhook unchanged and independent", async () => {
+  test("without the CRM the legacy webhook receives every lead, exactly as before", async () => {
     const f = fakeFetch({ "https://hooks.example/lead": [json(200, {})] });
     const d = await deliverLead(lead(), deps({ LEAD_WEBHOOK_URL: "https://hooks.example/lead" }, f));
     assert.deepEqual({ stored: d.stored, channel: d.channel, webhook: d.webhook }, { stored: true, channel: "webhook", webhook: true });
     assert.deepEqual(JSON.parse(f.calls[0].body), { lead_id: "x" });
+  });
+  test("with the CRM the webhook is a backup: never when the CRM has the lead (no duplicates), yes when it does not", async () => {
+    const HOOK = "https://hooks.example/lead";
+    const env = { ...ENV, ...EMAIL_ENV, LEAD_WEBHOOK_URL: HOOK };
+    const hooked = (f) => f.calls.filter((c) => c.url === HOOK).length;
+    for (const answer of [json(200, { status: "processed" }), json(200, { status: "duplicate" }), json(202, { status: "received", pending: "retry" })]) {
+      const f = fakeFetch({ [CFG.url]: [answer], [HOOK]: [json(200, {})], [RESEND]: [json(200, {})] });
+      const d = await deliverLead(lead(), deps(env, f));
+      assert.equal(hooked(f), 0);
+      assert.equal(d.webhook, null);
+    }
+    const down = fakeFetch({ [CFG.url]: [new TypeError("x"), new TypeError("x"), new TypeError("x")], [HOOK]: [json(200, {})], [RESEND]: [json(200, {})] });
+    const d = await deliverLead(lead(), deps(env, down));
+    assert.deepEqual({ webhook: d.webhook, emailed: d.emailed, channel: d.channel, stored: d.stored }, { webhook: true, emailed: true, channel: "webhook", stored: true });
+    assert.equal(hooked(down), 1);
+  });
+  test("a webhook value that is not an http(s) URL (e.g. \"off\") disables it", async () => {
+    for (const v of ["off", "", "  ", "ftp://x.example/hook", "javascript:alert(1)"]) {
+      const f = fakeFetch({});
+      const d = await deliverLead(lead(), deps({ LEAD_WEBHOOK_URL: v }, f));
+      assert.deepEqual({ webhook: d.webhook, configured: d.configured, calls: f.calls.length }, { webhook: null, configured: false, calls: 0 });
+    }
   });
   test("five deliveries of the same pending lead send five IDENTICAL bodies (the CRM keeps one)", async () => {
     const f = fakeFetch({ "*": () => json(200, { status: "duplicate" }) });
@@ -274,3 +296,67 @@ describe("landing touch and rate limit", () => {
     assert.equal(limited("ip", 5000), false);
   });
 });
+
+describe("protected CRM preview (Protection Bypass for Automation)", () => {
+  const BYPASS = "bypassForTests0123456789abcdefAB";
+  test("the bypass secret travels only as a header, only when configured and well formed", async () => {
+    const cfg = crmConfigFromEnv({ ...ENV, CRM_INGEST_BYPASS_SECRET: BYPASS });
+    assert.equal(cfg.bypass, BYPASS);
+    assert.equal(crmConfigFromEnv({ ...ENV, CRM_INGEST_BYPASS_SECRET: "bad secret with spaces" }).bypass, undefined);
+    assert.equal(crmConfigFromEnv(ENV).bypass, undefined);
+    const f = fakeFetch({ [CFG.url]: [json(200, { status: "processed" }), json(200, { status: "processed" })] });
+    await relayToCrm({ a: 1 }, cfg, { fetch: f, ...fast });
+    await relayToCrm({ a: 1 }, crmConfigFromEnv(ENV), { fetch: f, ...fast });
+    assert.equal(f.calls[0].headers["x-vercel-protection-bypass"], BYPASS);
+    assert.equal(f.calls[1].headers["x-vercel-protection-bypass"], undefined);
+    assert.ok(!f.calls[0].body.includes(BYPASS));
+    assert.ok(!f.calls[0].url.includes(BYPASS));
+  });
+});
+
+describe("cross-site attribution from tarasvasyliv.com (OD-16)", () => {
+  const AT = "2026-10-09T09:58:00.000Z";
+  const decorated = "https://likinagency.com/?utm_source=tarasvasyliv.com&utm_medium=referral&utm_campaign=personal_site&utm_content=hero_scale&o_src=instagram&o_med=social&o_cmp=TV_STORY&o_ref=l.instagram.com&o_fbclid=fb.should.not.travel";
+  test("a decorated link is a hop with its CTA and the reported origin (campaign values and referrer host only)", () => {
+    const a = touchFrom(decorated, "https://tarasvasyliv.com/", "likinagency.com", AT);
+    assert.deepEqual(a.cross, { site: "tarasvasyliv.com", at: AT, landing_path: "/", cta: "hero_scale", origin: { utm_source: "instagram", utm_medium: "social", utm_campaign: "TV_STORY", referrer_host: "l.instagram.com" } });
+    assert.ok(!JSON.stringify(a).includes("fb.should.not.travel"));
+    const junk = touchFrom("https://likinagency.com/?utm_source=tarasvasyliv.com&utm_content=%3Cscript%3E&o_src=a%22b&o_ref=evil%20host", "", "likinagency.com", AT);
+    assert.deepEqual(junk.cross, { site: "tarasvasyliv.com", at: AT, landing_path: "/" });
+    const plain = touchFrom("https://likinagency.com/escalar-ecommerce", "https://www.tarasvasyliv.com/", "likinagency.com", AT);
+    assert.deepEqual(plain.cross, { site: "tarasvasyliv.com", at: AT, landing_path: "/escalar-ecommerce" });
+    assert.equal(touchFrom("https://likinagency.com/?utm_source=facebook", "https://l.facebook.com/", "likinagency.com", AT).cross, undefined);
+  });
+  test("a hop never replaces the touch that brought the person here first in this visit; a new campaign does", () => {
+    const meta = touchFrom("https://likinagency.com/escalar-ecommerce?utm_source=facebook&utm_medium=paid_social&fbclid=fb.1", "", "likinagency.com", "2026-10-09T09:00:00.000Z").touch;
+    const hop = touchFrom(decorated, "https://tarasvasyliv.com/", "likinagency.com", AT);
+    const kept = nextLanding(meta, hop);
+    assert.equal(kept.utm_source, "facebook");
+    assert.equal(kept.fbclid, "fb.1");
+    assert.equal(kept.cross.cta, "hero_scale");
+    const first = nextLanding(null, hop);
+    assert.equal(first.utm_source, "tarasvasyliv.com");
+    assert.equal(first.cross.origin.utm_source, "instagram");
+    const google = nextLanding(kept, touchFrom("https://likinagency.com/?utm_source=google&gclid=g.1", "", "likinagency.com", AT));
+    assert.equal(google.utm_source, "google");
+    assert.equal(google.cross, undefined);
+    assert.equal(nextLanding(kept, touchFrom("https://likinagency.com/work", "https://likinagency.com/", "likinagency.com", AT)), null);
+  });
+  test("payload: session (with the CTA), the hop and the reported origin one second earlier; bounded and deterministic", () => {
+    const touch = nextLanding(null, touchFrom(decorated, "https://tarasvasyliv.com/", "likinagency.com", AT));
+    const input = toLeadInput(lead({ touch }), { fallbackEventId: "lead_fallback-0001", fallbackSubmittedAt: "2026-10-09T10:00:00.000Z" });
+    assert.equal(input.attribution.session.utmSource, "tarasvasyliv.com");
+    assert.equal(input.attribution.session.sourceCta, "hero_scale");
+    assert.equal(input.attribution.session.sourceSite, undefined);
+    assert.deepEqual(input.attribution.crossSite, { occurredAt: AT, landingUrl: "https://likinagency.com/", landingPath: "/", sourceSite: "tarasvasyliv.com", sourceCta: "hero_scale", referrerHost: "tarasvasyliv.com" });
+    assert.deepEqual(input.attribution.reportedFirst, { occurredAt: "2026-10-09T09:57:59.000Z", utmSource: "instagram", utmMedium: "social", utmCampaign: "TV_STORY", referrerHost: "l.instagram.com" });
+    assert.equal(JSON.stringify(toLeadInput(lead({ touch }), { fallbackEventId: "x-000001", fallbackSubmittedAt: "y" })), JSON.stringify(toLeadInput(lead({ touch }), { fallbackEventId: "x-000001", fallbackSubmittedAt: "y" })));
+    assert.deepEqual(crossSiteTouches({ ...touch, cross: { ...touch.cross, site: "evil.example" } }), {});
+    assert.deepEqual(crossSiteTouches({ ...touch, cross: { ...touch.cross, at: "not a date" } }), {});
+    const noOrigin = crossSiteTouches({ ...touch, cross: { site: "tarasvasyliv.com", at: AT, landing_path: "/?x=1#y" } });
+    assert.deepEqual(Object.keys(noOrigin), ["crossSite"]);
+    assert.equal(noOrigin.crossSite.landingPath, "/");
+    assert.equal(toLeadInput(lead(), { fallbackEventId: "lead_fallback-0001", fallbackSubmittedAt: "2026-10-09T10:00:00.000Z" }).attribution.crossSite, undefined);
+  });
+});
+

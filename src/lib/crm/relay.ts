@@ -19,7 +19,11 @@ import { createHmac } from "node:crypto";
 
 export const SIGNATURE_VERSION = "v1";
 
-export type CrmConfig = { url: string; keyId: string; secret: string };
+/**
+ * `bypass`: Vercel's "Protection Bypass for Automation" secret of the CRM project, only while the
+ * CRM is a protected preview (L2 validation). Server side only, sent as a header, never logged.
+ */
+export type CrmConfig = { url: string; keyId: string; secret: string; bypass?: string };
 export type CrmStatus = "processed" | "duplicate" | "received" | "rejected" | "retryable_failure" | "unreachable";
 export type RelayResult = { status: CrmStatus; attempts: number; code?: string; httpStatus?: number; receipt?: string; pending?: string };
 
@@ -35,6 +39,7 @@ export type RelayOptions = {
 };
 
 const KEY_ID = /^[a-z0-9][a-z0-9-]{2,39}$/;
+const BYPASS = /^[A-Za-z0-9_-]{16,128}$/;
 
 /** Null unless the three variables are set and well formed (a misconfigured relay stays off). */
 export function crmConfigFromEnv(env: Record<string, string | undefined>): CrmConfig | null {
@@ -50,7 +55,9 @@ export function crmConfigFromEnv(env: Record<string, string | undefined>): CrmCo
   } catch {
     return null;
   }
-  return { url, keyId, secret };
+  const bypass = env.CRM_INGEST_BYPASS_SECRET?.trim();
+  // A malformed bypass secret would only turn every call into a 401 from Vercel: ignore it.
+  return bypass && BYPASS.test(bypass) ? { url, keyId, secret, bypass } : { url, keyId, secret };
 }
 
 export function signBody(secret: string, timestamp: string, rawBody: string): string {
@@ -87,6 +94,7 @@ export async function relayToCrm(payload: unknown, cfg: CrmConfig, opts: RelayOp
           "x-likin-key-id": cfg.keyId,
           "x-likin-timestamp": timestamp,
           "x-likin-signature": signBody(cfg.secret, timestamp, body),
+          ...(cfg.bypass ? { "x-vercel-protection-bypass": cfg.bypass } : {}),
         },
         body,
         redirect: "manual",

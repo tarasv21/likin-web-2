@@ -72,9 +72,42 @@ export function boundedTouch(t: LandingTouch | undefined): Record<string, string
     fbclid: clean(t.fbclid, 500),
     gclid: clean(t.gclid, 500),
     ttclid: clean(t.ttclid, 500),
+    // Arrived through a tarasvasyliv.com link: its CTA (utm_content) names the button.
+    sourceCta: t.utm_source?.trim().toLowerCase() === CROSS_SITE ? clean(t.utm_content, 120) : undefined,
   };
-  const out = Object.fromEntries(Object.entries(touch).filter(([, v]) => v !== undefined)) as Record<string, string>;
+  return compact(touch);
+}
+
+const CROSS_SITE = "tarasvasyliv.com";
+const VALUE = /^[\p{L}\p{N} ._~+-]{1,100}$/u;
+const HOST = /^[a-z0-9.-]{1,253}$/;
+const compact = (o: Record<string, string | undefined>): Record<string, string> | undefined => {
+  const out = Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined)) as Record<string, string>;
   return Object.keys(out).length ? out : undefined;
+};
+const value = (v: unknown) => (typeof v === "string" && VALUE.test(v.trim()) ? v.trim() : undefined);
+
+/**
+ * The hop from tarasvasyliv.com (OD-16) and the origin that site reported, bounded. The CRM stores
+ * the hop as a `cross_site` touch and the origin as `reported_first` on tarasvasyliv.com, one
+ * second before the hop (never a time taken from the URL). Never click ids, never queries.
+ */
+export function crossSiteTouches(t: LandingTouch | undefined): { crossSite?: Record<string, string>; reportedFirst?: Record<string, string> } {
+  const c = t?.cross;
+  if (!c || typeof c !== "object" || c.site !== CROSS_SITE) return {};
+  const at = iso(c.at);
+  if (!at) return {};
+  const landingPath = path(c.landing_path) ?? "/";
+  const crossSite = compact({ occurredAt: at, landingUrl: `${SITE_ORIGIN}${landingPath}`, landingPath, sourceSite: CROSS_SITE, sourceCta: value(c.cta), referrerHost: CROSS_SITE });
+  const o = c.origin && typeof c.origin === "object" ? c.origin : undefined;
+  const host = typeof o?.referrer_host === "string" && HOST.test(o.referrer_host) ? o.referrer_host : undefined;
+  const reportedFirst = o
+    ? compact({ utmSource: value(o.utm_source), utmMedium: value(o.utm_medium), utmCampaign: value(o.utm_campaign), utmContent: value(o.utm_content), referrerHost: host })
+    : undefined;
+  return {
+    ...(crossSite ? { crossSite } : {}),
+    ...(reportedFirst ? { reportedFirst: { occurredAt: new Date(Date.parse(at) - 1000).toISOString(), ...reportedFirst } } : {}),
+  };
 }
 
 /**
@@ -115,7 +148,7 @@ export function toLeadInput(lead: Lead, opts: { fallbackEventId: string; fallbac
     answers,
     ...(clean(lead.additional_notes, 2000) ? { notes: clean(lead.additional_notes, 2000) } : {}),
     consent: { contact: lead.consent_contact === true, marketing: lead.consent_nurture === true, policyVersion: PRIVACY_POLICY_VERSION },
-    attribution: touch ? { session: touch } : {},
+    attribution: { ...(touch ? { session: touch } : {}), ...crossSiteTouches(lead.touch) },
     ...(clientVerdict ? { clientVerdict } : {}),
     metadata: {
       ...(pagePath ? { pagePath } : {}),

@@ -1,7 +1,7 @@
 /**
  * Where a validated lead goes (SERVER ONLY), in order of trust:
  *   1. LIKIN CRM (signed relay)            → `crm`
- *   2. the optional legacy webhook          → `webhook` (unchanged behaviour, independent)
+ *   2. the optional legacy webhook          → `webhook` (every lead without the CRM; with it, only when the CRM does not have the lead)
  *   3. the backup e-mail when the CRM did not confirm a lead (down, slow, rejected, pending)
  * `stored` is true only when some durable channel has the lead; `channel` says which, so nothing
  * claims "in the CRM" when only the e-mail has it. With nothing configured the behaviour is the
@@ -36,23 +36,35 @@ async function forwardWebhook(url: string, payload: Record<string, unknown>, doF
   }
 }
 
+/** Only an http(s) URL counts as a configured webhook (anything else, e.g. "off", disables it). */
+export function webhookUrlFrom(raw: string | undefined): string | null {
+  const v = raw?.trim();
+  if (!v) return null;
+  try {
+    const u = new URL(v);
+    return u.protocol === "https:" || u.protocol === "http:" ? v : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function deliverLead(lead: Lead, deps: DeliverDeps): Promise<Delivery> {
   const doFetch: Fetch = deps.fetch ?? ((input, init) => fetch(input, init));
   const crmCfg = crmConfigFromEnv(deps.env);
   const emailCfg = emailConfigFromEnv(deps.env);
-  const webhookUrl = deps.env.LEAD_WEBHOOK_URL?.trim() || null;
+  const webhookUrl = webhookUrlFrom(deps.env.LEAD_WEBHOOK_URL);
   const input = toLeadInput(lead, { fallbackEventId: deps.fallbackEventId, fallbackSubmittedAt: deps.fallbackSubmittedAt });
   const eventId = String(input.sourceEventId);
 
-  const [crm, webhook] = await Promise.all([
-    crmCfg ? relayToCrm(input, crmCfg, { fetch: doFetch, ...deps.relay }) : Promise.resolve(null),
-    webhookUrl ? forwardWebhook(webhookUrl, deps.webhookPayload, doFetch) : Promise.resolve(null),
+  // Without the CRM the legacy webhook keeps receiving every lead, exactly as before. With the CRM,
+  // the webhook is a BACKUP like the e-mail: only when the CRM does not have the lead, so the same
+  // lead never lands in both systems (no duplicates).
+  const crm = crmCfg ? await relayToCrm(input, crmCfg, { fetch: doFetch, ...deps.relay }) : null;
+  const useWebhook = webhookUrl !== null && (!crmCfg || !isInCrm(crm?.status));
+  const [webhook, emailed] = await Promise.all([
+    useWebhook ? forwardWebhook(webhookUrl, deps.webhookPayload, doFetch) : Promise.resolve(null),
+    emailCfg && !isConfirmedLead(crm?.status) ? sendFallbackEmail(emailCfg, fallbackEmail(lead, crm, eventId), { fetch: doFetch }).then((r) => r.ok) : Promise.resolve(null),
   ]);
-
-  let emailed: boolean | null = null;
-  if (emailCfg && !isConfirmedLead(crm?.status)) {
-    emailed = (await sendFallbackEmail(emailCfg, fallbackEmail(lead, crm, eventId), { fetch: doFetch })).ok;
-  }
 
   const channel: Channel = isConfirmedLead(crm?.status) ? "crm" : isInCrm(crm?.status) ? "crm_pending" : webhook ? "webhook" : emailed ? "email" : "none";
   return { stored: channel !== "none", channel, crm, emailed, webhook, configured: Boolean(crmCfg || emailCfg || webhookUrl), eventId };
