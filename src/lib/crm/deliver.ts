@@ -36,6 +36,17 @@ async function forwardWebhook(url: string, payload: Record<string, unknown>, doF
   }
 }
 
+/**
+ * What the legacy webhook receives: the cleaned lead with the same fields production sent before
+ * the CRM work. The landing touch (`touch`, with ad click ids) is new and stays out of that
+ * third-party service, so whatever the webhook feeds keeps working unchanged.
+ */
+export function legacyWebhookPayload(clean: Record<string, unknown>): Record<string, unknown> {
+  const legacy = { ...clean };
+  delete legacy.touch;
+  return legacy;
+}
+
 /** Only an http(s) URL counts as a configured webhook (anything else, e.g. "off", disables it). */
 export function webhookUrlFrom(raw: string | undefined): string | null {
   const v = raw?.trim();

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
-import { deliverLead } from "@/lib/crm/deliver";
+import { deliverLead, legacyWebhookPayload } from "@/lib/crm/deliver";
 import { createLimiter } from "@/lib/crm/rate-limit";
 import type { Lead } from "@/lib/qualify/types";
 
@@ -91,8 +91,8 @@ export async function POST(req: Request) {
     env: process.env,
     fallbackEventId: `lead_${randomUUID()}`,
     fallbackSubmittedAt: new Date().toISOString(),
-    // The legacy webhook keeps receiving exactly what it received before.
-    webhookPayload: clean,
+    // The legacy webhook keeps receiving exactly what it received before (no landing touch).
+    webhookPayload: legacyWebhookPayload(clean),
   });
 
   // Log the shape and the outcome, never the personal data, the secret or the signature.

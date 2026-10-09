@@ -9,7 +9,7 @@ import { createHmac } from "node:crypto";
 import { crmConfigFromEnv, isInCrm, relayToCrm, signBody } from "../src/lib/crm/relay.ts";
 import { boundedAnswers, crossSiteTouches, toLeadInput } from "../src/lib/crm/canonical.ts";
 import { crmStatusLine, emailConfigFromEnv, fallbackEmail, sendFallbackEmail } from "../src/lib/crm/fallback-email.ts";
-import { deliverLead } from "../src/lib/crm/deliver.ts";
+import { deliverLead, legacyWebhookPayload } from "../src/lib/crm/deliver.ts";
 import { nextLanding, touchFrom } from "../src/lib/attribution/landing.ts";
 import { createLimiter } from "../src/lib/crm/rate-limit.ts";
 
@@ -285,6 +285,16 @@ describe("delivery decision (what the visitor is told)", () => {
     const d = await deliverLead(lead(), deps({ LEAD_WEBHOOK_URL: "https://hooks.example/lead" }, f));
     assert.deepEqual({ stored: d.stored, channel: d.channel, webhook: d.webhook }, { stored: true, channel: "webhook", webhook: true });
     assert.deepEqual(JSON.parse(f.calls[0].body), { lead_id: "x" });
+  });
+  test("the legacy webhook payload keeps the pre-CRM fields: the landing touch and its click ids never reach it", () => {
+    const clean = { ...lead(), received_at: "2026-10-09T10:00:06.000Z", user_agent: "test" };
+    const sent = legacyWebhookPayload(clean);
+    assert.equal("touch" in sent, false);
+    assert.equal(JSON.stringify(sent).includes("fb.1.test"), false);
+    const { touch, ...rest } = clean;
+    assert.ok(touch);
+    assert.deepEqual(sent, rest);
+    assert.ok(clean.touch, "the original lead is not modified");
   });
   test("with the CRM the webhook is a backup: never when the CRM has the lead (no duplicates), yes when it does not", async () => {
     const HOOK = "https://hooks.example/lead";
