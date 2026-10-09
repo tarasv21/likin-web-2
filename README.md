@@ -14,10 +14,12 @@ npm run typecheck  # tsc
 npm run lint       # eslint
 ```
 
-Variables de entorno opcionales en `.env.example`. `CRM_INGEST_URL`, `CRM_INGEST_KEY_ID` y `CRM_INGEST_SECRET` envían cada lead a LIKIN CRM (firmado, solo servidor); `RESEND_API_KEY` y `LEAD_EMAIL_FROM` activan el email de respaldo; `LEAD_WEBHOOK_URL` reenvía cada lead a un webhook (Make, Zapier, n8n, Slack…). Sin ninguna no se guarda nada y el formulario se lo dice al usuario en vez de prometer una respuesta.
+Variables de entorno opcionales en `.env.example`. `CRM_INGEST_URL`, `CRM_INGEST_KEY_ID` y `CRM_INGEST_SECRET` envían cada lead a LIKIN CRM (firmado, solo servidor); `RESEND_API_KEY` y `LEAD_EMAIL_FROM` (las dos) activan el email del lead: sin CRM, de cada lead; con CRM, solo de respaldo; `LEAD_WEBHOOK_URL` reenvía cada lead a un webhook (Make, Zapier, n8n, Slack…); `NEXT_PUBLIC_META_PIXEL_ID` activa el aviso de cookies y el píxel de Meta. Sin ninguna no se guarda nada y el formulario se lo dice al usuario en vez de prometer una respuesta.
+
+Datos legales (titular, NIF, domicilio, servicio del webhook): `src/data/legal.ts`. Lo que falte se ve como «[pendiente]» en las páginas legales, y el aviso de texto provisional sigue hasta marcar `reviewed` tras la revisión jurídica.
 
 ```bash
-npm test         # relay al CRM, payload, email de respaldo, origen de la visita (sin red)
+npm test         # relay al CRM, payload, email del lead, origen de la visita, consentimiento y píxel (sin red)
 ```
 
 ## Rutas
@@ -135,6 +137,17 @@ Stripe y Calendly son variables públicas en `.env.example`. Mientras estén vac
 - Mientras el CRM sea un preview protegido de Vercel, `CRM_INGEST_BYPASS_SECRET` (solo servidor, solo Preview) viaja como cabecera `x-vercel-protection-bypass`.
 
 La clave HMAC es de esta web y solo vive en su servidor; nunca va al navegador ni a una variable `NEXT_PUBLIC_*`. Rotación, revocación y qué hacer si se filtra: `likin-crm/docs/LEAD_INGESTION_DESIGN.md` §11.2.
+
+### Medición de Meta (píxel con consentimiento)
+
+- `NEXT_PUBLIC_META_PIXEL_ID` vacío: ni píxel ni aviso de cookies (la web no instala cookies).
+- Con el id: aviso de cookies con «Rechazar» y «Aceptar» al mismo nivel (`src/components/consent/ConsentManager.tsx`), decisión en `localStorage` (`likin.consent.v1`, 12 meses) y «Configurar cookies» en el pie para cambiarla o retirarla.
+- Nada de Meta se carga antes de «Aceptar». Después: `PageView` en cada página, sin configuración automática de eventos ni coincidencia avanzada (`src/lib/meta-pixel.ts`).
+- `Lead` solo cuando el servidor confirma la solicitud (`stored: true`), con `content_name` = BUILD o SCALE y el `lead_id` como `eventID` (el mismo id que el webhook, el email y el CRM; sirve para deduplicar con la Conversions API más adelante). Una vez por `lead_id`: doble clic, reintentos o navegación no lo repiten.
+- Retirar el consentimiento detiene el píxel y borra `_fbp` y `_fbc` de esta web.
+- En el Administrador de eventos de Meta, deja **desactivada** la «coincidencia avanzada automática».
+
+`npm test` incluye `tests/pixel.test.mjs` (consentimiento, un solo Lead, sin datos personales, retirada).
 
 ## QA
 

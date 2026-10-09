@@ -12,6 +12,9 @@ import { track } from "@/lib/qualify/events";
 import { clearSession, loadSession, readAttribution, saveSession } from "@/lib/qualify/session";
 import { buildLead, submitLead } from "@/lib/qualify/submit";
 import { useReducedMotion } from "@/lib/hooks";
+import { metaPixel } from "@/lib/meta-pixel";
+import { legal } from "@/data/legal";
+import { site } from "@/data/site";
 import type { Answers, Contact, Lead, Question, Service, Verdict } from "@/lib/qualify/types";
 
 type Stage = { kind: "question"; q: Question } | { kind: "contact" } | { kind: "result" };
@@ -222,6 +225,8 @@ export function QualifyFlow({ service, source, onClose, onSwitchToBuild }: { ser
     }
     pending.current = null;
     setStored(res.stored);
+    // Conversion for Meta only when the server confirmed the lead, and only with consent (once per id).
+    if (res.stored) metaPixel.lead({ eventId: lead.lead_id, service });
     track("qualification_submitted", { service, qualification: verdict.qualification, next_action: verdict.next_action, lead_score: verdict.lead_score, reasons: verdict.qualification_reasons, ok: true });
     if (verdict.requires_manual_review) track("manual_review_submitted", { service, qualification: verdict.qualification });
     clearSession();
@@ -314,11 +319,16 @@ export function QualifyFlow({ service, source, onClose, onSwitchToBuild }: { ser
 
                 <div className="grid gap-3 border-t border-hairline pt-5">
                   <Consent checked={contact.consent_contact} onChange={(v) => setContact({ ...contact, consent_contact: v })} error={contactErrors.consent_contact}>
-                    Acepto que Likin trate mis datos para responder a esta solicitud, según la <a href="/privacidad" className="text-cloud underline underline-offset-2 hover:text-teal">política de privacidad</a>.
+                    Acepto que Likin trate mis datos para responder a esta solicitud, según la{" "}
+                    <a href="/privacidad" target="_blank" rel="noopener" className="text-cloud underline underline-offset-2 hover:text-teal">
+                      política de privacidad
+                    </a>
+                    .
                   </Consent>
                   <Consent checked={contact.consent_nurture} onChange={(v) => setContact({ ...contact, consent_nurture: v })}>
                     Quiero recibir también contenidos y novedades de Likin. <span className="text-steel">Opcional.</span>
                   </Consent>
+                  <p className="text-xs leading-relaxed text-steel">Responsable: {legal.holder.trim() || "Likin Agency"}. Finalidad: valorar tu proyecto y responderte. Derechos: acceso, rectificación, supresión y otros en {site.email}. Más información en la política de privacidad.</p>
                 </div>
 
                 {/* Honeypot. Off-screen, never announced, never focusable. */}

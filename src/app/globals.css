@@ -102,6 +102,7 @@
   --z-raised: 10;
   --z-sticky: 30;
   --z-header: 40;
+  --z-consent: 50; /* cookie panel: above the page, below the qualification modal */
   --z-modal: 60;
   --header-h: 68px;
   color-scheme: dark;
