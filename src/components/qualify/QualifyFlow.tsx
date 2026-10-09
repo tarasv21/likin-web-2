@@ -289,11 +289,13 @@ export function QualifyFlow({ service, source, onClose, onSwitchToBuild }: { ser
           )}
 
           {stage.kind === "contact" && (
-            <div>
+            // Like the questions, only the fields scroll: on a phone the contact step is taller
+            // than the sheet, and without its own scroll region the consent box was out of reach.
+            <div className="flex min-h-0 flex-col">
               <h2 ref={headingRef} tabIndex={-1} className="text-h3 outline-none">
                 Último paso. <span className="text-steel">¿Con quién hablamos?</span>
               </h2>
-              <div ref={formRef} className="mt-7 grid gap-5">
+              <div ref={formRef} className="qz-scroll mt-7 grid min-h-0 gap-5 overflow-y-auto overscroll-contain pr-1">
                 <LabelledField label="Nombre y apellidos" error={contactErrors.contact_name}>
                   {(id, d) => <input id={id} aria-describedby={d} autoComplete="name" value={contact.contact_name} onChange={(e) => setContact({ ...contact, contact_name: e.target.value })} className={inputCls(contactErrors.contact_name)} />}
                 </LabelledField>
