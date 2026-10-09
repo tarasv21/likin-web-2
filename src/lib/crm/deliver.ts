@@ -63,7 +63,7 @@ export async function deliverLead(lead: Lead, deps: DeliverDeps): Promise<Delive
   const useWebhook = webhookUrl !== null && (!crmCfg || !isInCrm(crm?.status));
   const [webhook, emailed] = await Promise.all([
     useWebhook ? forwardWebhook(webhookUrl, deps.webhookPayload, doFetch) : Promise.resolve(null),
-    emailCfg && !isConfirmedLead(crm?.status) ? sendFallbackEmail(emailCfg, fallbackEmail(lead, crm, eventId), { fetch: doFetch }).then((r) => r.ok) : Promise.resolve(null),
+    emailCfg && !isConfirmedLead(crm?.status) ? sendFallbackEmail(emailCfg, fallbackEmail(lead, crm, eventId, input), { fetch: doFetch }).then((r) => r.ok) : Promise.resolve(null),
   ]);
 
   const channel: Channel = isConfirmedLead(crm?.status) ? "crm" : isInCrm(crm?.status) ? "crm_pending" : webhook ? "webhook" : emailed ? "email" : "none";

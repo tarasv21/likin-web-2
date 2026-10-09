@@ -189,19 +189,46 @@ describe("backup e-mail", () => {
     const pending = fallbackEmail(lead(), { status: "received", attempts: 1, pending: "retry" }, "lead_1");
     assert.match(pending.subject, /pendiente en el CRM/);
     assert.match(pending.text, /PENDIENTE de procesar/);
-    assert.match(crmStatusLine(null), /no está configurado/);
+    assert.match(crmStatusLine(null), /CRM todavía no conectado: este email ES el registro del lead/);
     assert.match(down.text, /utm_source \/ medium \/ campaign: facebook \/ paid_social \/ SCALE_COLD/);
   });
-  test("sent through Resend with the configured sender; failures are reported, not hidden", async () => {
+  test("without the CRM (ads before the CRM): the e-mail is the record, readable, with the exact payload attached", () => {
+    const input = toLeadInput(lead({ touch: { occurred_at: "2026-10-09T09:00:00.000Z", landing_path: "/escalar-ecommerce", utm_source: "facebook", utm_campaign: "SCALE_COLD", fbclid: "fb.secret.value" } }), { fallbackEventId: "lead_fb", fallbackSubmittedAt: "2026-10-09T10:00:00.000Z" });
+    const m = fallbackEmail(lead(), null, "lead_1", input);
+    assert.equal(m.subject, "[Lead SCALE · HIGH_FIT 82/100] Marca Ejemplo");
+    assert.match(m.text, /este email ES el registro del lead/);
+    assert.match(m.text, /Prioridad estimada por la web \(el CRM la recalculará\): HIGH_FIT · 82\/100 · siguiente paso: BOOK_CALL/);
+    assert.match(m.text, /¿Cuánto factura tu eCommerce al mes\?: Entre 25\.000 y 50\.000/);
+    assert.ok(!m.text.includes("fb.secret.value"));
+    assert.equal(m.attachments.length, 1);
+    assert.equal(m.attachments[0].filename, "lead-lead_1.json");
+    const attached = JSON.parse(Buffer.from(m.attachments[0].content, "base64").toString("utf8"));
+    assert.deepEqual(attached, JSON.parse(JSON.stringify(input)));
+    assert.equal(attached.attribution.session.fbclid, "fb.secret.value");
+    // Same submission → same key; anything different → another key.
+    assert.equal(fallbackEmail(lead(), null, "lead_1", input).idempotencyKey, m.idempotencyKey);
+    assert.notEqual(fallbackEmail(lead({ phone: "+34 600 000 999" }), null, "lead_1", input).idempotencyKey, m.idempotencyKey);
+    assert.ok(m.idempotencyKey.startsWith("lead-email:lead_1:") && m.idempotencyKey.length <= 256);
+  });
+  test("sent through Resend with the configured sender; one safe retry; failures are reported, not hidden", async () => {
     const cfg = emailConfigFromEnv(EMAIL_ENV);
     assert.deepEqual(cfg, { apiKey: "re_test_not_real", from: "Web <web@likin.example>", to: "taras@likinagency.com" });
-    const f = fakeFetch({ "https://api.resend.com/emails": [json(200, { id: "e1" }), json(500, {}), new TypeError("fetch failed")] });
-    assert.deepEqual(await sendFallbackEmail(cfg, { subject: "s", text: "t", replyTo: "a@b.example" }, { fetch: f }), { ok: true });
-    const sent = JSON.parse(f.calls[0].body);
-    assert.deepEqual(sent, { from: "Web <web@likin.example>", to: ["taras@likinagency.com"], reply_to: "a@b.example", subject: "s", text: "t" });
+    const noWait = { sleep: async () => {} };
+    const f = fakeFetch({ "https://api.resend.com/emails": [json(200, { id: "e1" })] });
+    assert.deepEqual(await sendFallbackEmail(cfg, { subject: "s", text: "t", replyTo: "a@b.example", idempotencyKey: "k1", attachments: [{ filename: "a.json", content: "e30=" }] }, { fetch: f, ...noWait }), { ok: true, attempts: 1 });
+    assert.deepEqual(JSON.parse(f.calls[0].body), { from: "Web <web@likin.example>", to: ["taras@likinagency.com"], reply_to: "a@b.example", subject: "s", text: "t", attachments: [{ filename: "a.json", content: "e30=" }] });
     assert.equal(f.calls[0].headers.Authorization, "Bearer re_test_not_real");
-    assert.deepEqual(await sendFallbackEmail(cfg, { subject: "s", text: "t" }, { fetch: f }), { ok: false, code: "resend_http_500" });
-    assert.deepEqual(await sendFallbackEmail(cfg, { subject: "s", text: "t" }, { fetch: f }), { ok: false, code: "resend_network" });
+    assert.equal(f.calls[0].headers["Idempotency-Key"], "k1");
+    const retry = fakeFetch({ "https://api.resend.com/emails": [json(500, {}), json(200, { id: "e2" })] });
+    assert.deepEqual(await sendFallbackEmail(cfg, { subject: "s", text: "t", idempotencyKey: "k2" }, { fetch: retry, ...noWait }), { ok: true, attempts: 2 });
+    assert.equal(retry.calls[0].headers["Idempotency-Key"], retry.calls[1].headers["Idempotency-Key"]);
+    const down = fakeFetch({ "https://api.resend.com/emails": [json(503, {}), json(503, {})] });
+    assert.deepEqual(await sendFallbackEmail(cfg, { subject: "s", text: "t" }, { fetch: down, ...noWait }), { ok: false, code: "resend_http_503", attempts: 2 });
+    const net = fakeFetch({ "https://api.resend.com/emails": [new TypeError("fetch failed"), new TypeError("fetch failed")] });
+    assert.deepEqual(await sendFallbackEmail(cfg, { subject: "s", text: "t" }, { fetch: net, ...noWait }), { ok: false, code: "resend_network", attempts: 2 });
+    const bad = fakeFetch({ "https://api.resend.com/emails": [json(422, {})] });
+    assert.deepEqual(await sendFallbackEmail(cfg, { subject: "s", text: "t" }, { fetch: bad, ...noWait }), { ok: false, code: "resend_http_422", attempts: 1 });
+    assert.equal(bad.calls.length, 1);
     assert.equal(emailConfigFromEnv({ RESEND_API_KEY: "x" }), null);
   });
 });
@@ -223,6 +250,17 @@ describe("delivery decision (what the visitor is told)", () => {
     const mail = JSON.parse(f.calls.find((c) => c.url === RESEND).body);
     assert.match(mail.subject, /NO registrado en el CRM/);
     assert.ok(!mail.text.includes(SECRET));
+  });
+  test("no CRM yet, e-mail configured: EVERY lead is e-mailed with its payload (the record until the CRM)", async () => {
+    const f = fakeFetch({ [RESEND]: [json(200, { id: "e1" })] });
+    const d = await deliverLead(lead(), deps({ ...EMAIL_ENV }, f));
+    assert.deepEqual({ stored: d.stored, channel: d.channel, emailed: d.emailed, crm: d.crm, configured: d.configured }, { stored: true, channel: "email", emailed: true, crm: null, configured: true });
+    const sent = JSON.parse(f.calls[0].body);
+    assert.match(sent.subject, /^\[Lead SCALE · HIGH_FIT 82\/100\] Marca Ejemplo$/);
+    const attached = JSON.parse(Buffer.from(sent.attachments[0].content, "base64").toString("utf8"));
+    assert.equal(attached.sourceEventId, d.eventId);
+    assert.equal(attached.schema, "lead-input@1");
+    assert.ok(f.calls[0].headers["Idempotency-Key"].startsWith(`lead-email:${d.eventId}:`));
   });
   test("CRM down and no backup → nothing stored: the route answers 502 and the person can retry", async () => {
     const f = fakeFetch({ [CFG.url]: [json(500, {}), json(500, {}), json(500, {})] });

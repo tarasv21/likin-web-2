@@ -111,5 +111,5 @@ export async function POST(req: Request) {
   // Nothing configured: the historical behaviour (the result screen hands over the e-mail address).
   if (!delivery.configured) return NextResponse.json({ ok: true, stored: false, channel: "none" }, { headers: { "Cache-Control": "no-store" } });
   // Configured but nothing durable took it: the person can retry (same submission, same id).
-  return bad("No hemos podido registrar tu solicitud. Inténtalo de nuevo.", 502);
+  return bad("No hemos podido registrar tu solicitud. Inténtalo de nuevo y, si vuelve a fallar, escríbenos a taras@likinagency.com.", 502);
 }
