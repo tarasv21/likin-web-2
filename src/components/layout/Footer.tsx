@@ -4,7 +4,7 @@ import { Fingerprint } from "@/components/brand/Fingerprint";
 import { ArrowUpRight, Instagram, LinkedIn, Mail } from "@/components/ui/Icons";
 import { site } from "@/data/site";
 import { ContactLink } from "./ContactLink";
-import { CookieSettingsButton } from "@/components/consent/CookieSettingsButton";
+import { CookieSettingsItem } from "@/components/consent/CookieSettingsButton";
 
 export function Footer() {
   return (
@@ -88,9 +88,7 @@ export function Footer() {
                   Cookies
                 </Link>
               </li>
-              <li>
-                <CookieSettingsButton className="text-left text-cloud/85 transition-colors hover:text-teal" />
-              </li>
+              <CookieSettingsItem className="text-left text-cloud/85 transition-colors hover:text-teal" />
             </ul>
           </div>
         </nav>
