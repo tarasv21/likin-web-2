@@ -50,7 +50,7 @@ if (!after) {
 }
 
 console.log("— Textos legales (src/data/legal.ts)");
-for (const [key, label] of [["holder", "titular"], ["taxId", "NIF"], ["address", "domicilio"], ["webhookService", "servicio del webhook"]]) ok(`${label} rellenado`, Boolean(legal[key]?.trim()));
+for (const [key, label] of [["holder", "titular"], ["tradeName", "nombre comercial"], ["taxId", "NIF/NIE"], ["address", "domicilio"], ["webhookService", "servicio del webhook"], ["retention", "plazos de conservación"], ["transfers", "transferencias internacionales"]]) ok(`${label} rellenado`, Boolean(legal[key]?.trim()));
 ok("revisión jurídica confirmada (reviewed: true)", legal.reviewed === true);
 
 console.log("— Vercel");

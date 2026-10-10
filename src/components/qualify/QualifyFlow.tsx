@@ -328,7 +328,7 @@ export function QualifyFlow({ service, source, onClose, onSwitchToBuild }: { ser
                   <Consent checked={contact.consent_nurture} onChange={(v) => setContact({ ...contact, consent_nurture: v })}>
                     Quiero recibir también contenidos y novedades de Likin. <span className="text-steel">Opcional.</span>
                   </Consent>
-                  <p className="text-xs leading-relaxed text-steel">Responsable: {legal.holder.trim() || "Likin Agency"}. Finalidad: valorar tu proyecto y responderte. Derechos: acceso, rectificación, supresión y otros en {site.email}. Más información en la política de privacidad.</p>
+                  <p className="text-xs leading-relaxed text-steel">Responsable: {legal.holder} ({legal.tradeName}). Finalidad: valorar tu proyecto y responderte. Derechos: acceso, rectificación, supresión y otros en {site.email}. Más información en la política de privacidad.</p>
                 </div>
 
                 {/* Honeypot. Off-screen, never announced, never focusable. */}

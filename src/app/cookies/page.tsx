@@ -1,5 +1,6 @@
 import { LegalPage, legalMetadata } from "@/components/LegalPage";
 import { site } from "@/data/site";
+import { legal } from "@/data/legal";
 
 export const metadata = legalMetadata("Política de cookies", site.routes.cookies);
 
@@ -8,6 +9,7 @@ export default function Page() {
     <LegalPage
       title="Política de cookies"
       sections={[
+        { h: "Quién las usa", p: [`Esta web es de ${legal.holder} (${legal.tradeName}). Solo usa cookies de terceros si las aceptas: las de Meta, para medir los anuncios.`] },
         {
           h: "Cookies de medición de Meta (solo si las aceptas)",
           p: [
