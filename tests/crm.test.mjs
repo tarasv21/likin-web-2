@@ -160,7 +160,7 @@ describe("lead-input@1 payload", () => {
     assert.deepEqual(p.form, { key: "LK-SCALE", version: "2026-09-qualify-1" });
     assert.deepEqual(p.identity, { name: "Ana Ejemplo", email: "ana@marca.example", phone: "+34 600 000 000", businessRole: "FOUNDER" });
     assert.deepEqual(p.company, { name: "Marca Ejemplo", link: "marca.example" });
-    assert.deepEqual(p.consent, { contact: true, marketing: false, policyVersion: "likinagency-privacidad@2026-09" });
+    assert.deepEqual(p.consent, { contact: true, marketing: false, policyVersion: "likinagency-privacidad@2026-10-11" });
     assert.deepEqual(p.clientVerdict, { qualification: "HIGH_FIT", leadScore: 82 });
     assert.deepEqual(p.metadata, { pagePath: "/escalar-ecommerce", sourceCta: "/escalar-ecommerce#hero" });
     assert.deepEqual(p.attribution.session, {

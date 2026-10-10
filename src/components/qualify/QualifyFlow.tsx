@@ -319,14 +319,14 @@ export function QualifyFlow({ service, source, onClose, onSwitchToBuild }: { ser
 
                 <div className="grid gap-3 border-t border-hairline pt-5">
                   <Consent checked={contact.consent_contact} onChange={(v) => setContact({ ...contact, consent_contact: v })} error={contactErrors.consent_contact}>
-                    Acepto que Likin trate mis datos para responder a esta solicitud, según la{" "}
+                    Acepto que LIKIN Agency trate mis datos para responder a esta solicitud, según la{" "}
                     <a href="/privacidad" target="_blank" rel="noopener" className="text-cloud underline underline-offset-2 hover:text-teal">
                       política de privacidad
                     </a>
                     .
                   </Consent>
                   <Consent checked={contact.consent_nurture} onChange={(v) => setContact({ ...contact, consent_nurture: v })}>
-                    Quiero recibir también contenidos y novedades de Likin. <span className="text-steel">Opcional.</span>
+                    Quiero recibir también contenidos y novedades de LIKIN Agency. <span className="text-steel">Opcional.</span>
                   </Consent>
                   <p className="text-xs leading-relaxed text-steel">Responsable: {legal.holder} ({legal.tradeName}). Finalidad: valorar tu proyecto y responderte. Derechos: acceso, rectificación, supresión y otros en {site.email}. Más información en la política de privacidad.</p>
                 </div>

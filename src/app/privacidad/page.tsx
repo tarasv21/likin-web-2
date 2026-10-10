@@ -17,7 +17,8 @@ export default function Page() {
           h: "Qué datos tratamos",
           p: [
             "Los que nos das en el formulario de precualificación: nombre, email, teléfono, nombre y enlace de tu marca (web o Instagram), tus respuestas sobre el negocio (por ejemplo, facturación, inversión en publicidad o plataforma), lo que quieras contarnos y tus consentimientos.",
-            "Además, cómo llegaste a la web (página de llegada, web de origen, parámetros de la campaña e identificador del clic si vienes de un anuncio) y el tipo de navegador, solo si envías el formulario.",
+            "Además, cómo llegaste a la web (página de llegada, web de origen, parámetros de la campaña e identificador del clic si vienes de un anuncio), solo si envías el formulario.",
+            "Nombre, email, teléfono y la casilla de consentimiento son obligatorios: sin ellos no podemos responderte. El resto es opcional o depende de tus respuestas.",
           ],
         },
         {
@@ -43,8 +44,7 @@ export default function Page() {
             "Vercel: alojamiento y funcionamiento de la web, incluido el envío del formulario.",
             "Resend: envío del email con tu solicitud a nuestro buzón.",
             "Google (Google Workspace): correo electrónico de LIKIN Agency, donde recibimos tu solicitud.",
-            `${pending(legal.webhookService, "servicio que recibe cada solicitud por webhook")}: recepción de las solicitudes y aviso por email.`,
-            "Meta Platforms Ireland: solo si aceptas las cookies de medición, recibe mediante su píxel las páginas que visitas y el aviso de que has enviado una solicitud, sin tus datos de contacto.",
+            "Meta Platforms Ireland: solo si aceptas las cookies de medición, recibe mediante su píxel las páginas que visitas (con la dirección completa, incluidos los parámetros de campaña y el identificador del clic), el aviso de que has enviado una solicitud con el tipo de formulario y un identificador de la solicitud, los identificadores de sus cookies y los datos técnicos de tu conexión y navegador, como la dirección IP. Nunca tu nombre, email, teléfono ni tus respuestas.",
           ],
         },
         { h: "Transferencias internacionales", p: [pending(legal.transfers, "transferencias internacionales de cada proveedor y su garantía; se completa en la revisión jurídica")] },
@@ -53,7 +53,7 @@ export default function Page() {
           h: "Tus derechos",
           p: [`Puedes pedir acceso, rectificación, supresión, oposición, limitación del tratamiento y portabilidad escribiendo a ${site.email}. Si crees que no hemos tratado bien tus datos, puedes reclamar ante la Agencia Española de Protección de Datos (aepd.es).`],
         },
-        { h: "Seguridad", p: ["La web funciona con conexión cifrada, las claves de los servicios solo están en el servidor y los registros técnicos de la web no guardan tus datos personales."] },
+        { h: "Seguridad", p: ["La web funciona con conexión cifrada y las claves de los servicios solo están en el servidor. Los registros de la aplicación guardan un identificador y el resultado de cada envío, sin tus datos de contacto ni tus respuestas. Vercel, como proveedor de alojamiento, registra datos técnicos de las peticiones (como la dirección IP) para el funcionamiento y la seguridad del servicio."] },
       ]}
     />
   );

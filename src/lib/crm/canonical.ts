@@ -8,13 +8,15 @@
  * No IP, no user agent, no cookies: only what the person typed, their answers and the attribution
  * of the visit (UTMs and click ids from the landing URL, the landing path and the referrer host).
  */
+import { legal } from "@/data/legal";
 import type { Lead, LandingTouch } from "@/lib/qualify/types";
 
 export const LEAD_INPUT_SCHEMA = "lead-input@1";
 export const SITE = "likinagency.com";
 export const SITE_ORIGIN = "https://likinagency.com";
 /** Version of the privacy text the consent checkbox refers to (bump when /privacidad changes). */
-export const PRIVACY_POLICY_VERSION = "likinagency-privacidad@2026-09";
+/** The privacy policy version the person accepted (src/data/legal.ts, shown on /privacidad). */
+export const PRIVACY_POLICY_VERSION = legal.policyVersion;
 
 const EVENT_ID = /^[A-Za-z0-9_-]{6,160}$/;
 const ANSWER_KEY = /^[a-z0-9_]{1,80}$/;

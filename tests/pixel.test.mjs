@@ -6,7 +6,7 @@
 import { describe, test } from "node:test";
 import assert from "node:assert/strict";
 import { CONSENT_MAX_AGE_MS, parseConsent, readConsent, saveConsent, stateOf } from "../src/lib/consent.ts";
-import { LEADS_SENT_KEY, META_PIXEL_SRC, createMetaPixel, metaCookieDeletions, pixelIdFrom } from "../src/lib/meta-pixel.ts";
+import { LEADS_SENT_KEY, META_PIXEL_SRC, createMetaPixel, fbcCookie, metaCookieDeletions, pixelIdFrom } from "../src/lib/meta-pixel.ts";
 
 const NOW = Date.parse("2026-10-10T10:00:00.000Z");
 
@@ -110,7 +110,7 @@ describe("Meta Pixel", () => {
     assert.equal(px.lead({ eventId: id, service: "SCALE" }), true);
     assert.equal(px.lead({ eventId: id, service: "SCALE" }), false, "double click / retry");
     const leads = f.calls().filter((c) => c[1] === "Lead");
-    assert.deepEqual(leads, [["track", "Lead", { content_name: "SCALE", content_category: "qualification_form" }, { eventID: id }]]);
+    assert.deepEqual(leads, [["track", "Lead", { content_name: "SCALE", content_category: "likinagency.com" }, { eventID: id }]]);
     assert.doesNotMatch(JSON.stringify(f.calls()), /@|\+34|Ana|Marca/);
     assert.deepEqual(JSON.parse(f.host.sessionStorage.getItem(LEADS_SENT_KEY)), [id]);
     // A new pixel instance in the same tab (re-render, remount) still remembers it.
@@ -148,5 +148,22 @@ describe("Meta Pixel", () => {
       "_fbp=; Max-Age=0; path=/; domain=.likinagency.com",
     ]);
     assert.deepEqual(metaCookieDeletions("localhost"), ["_fbp=; Max-Age=0; path=/", "_fbc=; Max-Age=0; path=/"]);
+  });
+});
+
+describe("ad click id after a late consent", () => {
+  test("_fbc rebuilt from the landing fbclid in Meta's format, only if Meta has not set it", () => {
+    const at = "2026-10-10T09:55:00.000Z";
+    assert.equal(fbcCookie({ fbclid: "IwAR0abcdefghij", at }, "", NOW), `_fbc=fb.1.${Date.parse(at)}.IwAR0abcdefghij; Max-Age=7776000; path=/; SameSite=Lax`);
+    assert.equal(fbcCookie({ fbclid: "IwAR0abcdefghij", at }, "_fbp=fb.1.1.2; _fbc=fb.1.1.x", NOW), null, "Meta already has it");
+    for (const bad of [undefined, "", "short", "bad id with spaces", "x".repeat(501)]) assert.equal(fbcCookie({ fbclid: bad, at }, "", NOW), null, String(bad));
+    assert.match(fbcCookie({ fbclid: "IwAR0abcdefghij", at: "not a date" }, "", NOW), new RegExp(`fb\\.1\\.${NOW}\\.`));
+  });
+  test("set before Meta's script loads, only on grant", () => {
+    const f = fakeHost();
+    const px = createMetaPixel("1234567890", () => f.host);
+    px.grant({ fbclid: "IwAR0abcdefghij", at: "2026-10-10T09:55:00.000Z" });
+    assert.ok(f.cookies[0]?.startsWith("_fbc=fb.1."));
+    assert.equal(f.scripts.length, 1);
   });
 });

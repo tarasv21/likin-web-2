@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { CONSENT_EVENT, CONSENT_KEY, CONSENT_OPEN_EVENT, readConsent, saveConsent, stateOf, type ConsentState } from "@/lib/consent";
 import { metaPixel } from "@/lib/meta-pixel";
+import { readLanding } from "@/lib/attribution/landing";
 import { site } from "@/data/site";
 import { cn } from "@/lib/utils";
 
@@ -41,7 +42,10 @@ function ConsentPanel() {
 
   // Apply the decision to the pixel: load it only after an explicit yes; a no deletes its cookies.
   useEffect(() => {
-    if (state === "granted") metaPixel.grant();
+    if (state === "granted") {
+      const touch = readLanding();
+      metaPixel.grant(touch ? { fbclid: touch.fbclid, at: touch.occurred_at } : null);
+    }
     else if (state === "denied") metaPixel.revoke();
   }, [state]);
 

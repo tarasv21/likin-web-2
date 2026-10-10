@@ -3,7 +3,8 @@
  * cookies (src/lib/consent.ts). Before that nothing from Meta loads: no script, no cookie, no request.
  *
  * What Meta receives: page views and, when the server confirms a BUILD/SCALE request, one `Lead`
- * with `content_name` = the service and the lead id as `eventID` (deduplication now, and against
+ * with `content_name` = the service, `content_category` = the website (the same pixel also runs on
+ * tarasvasyliv.com) and the lead id as `eventID` (deduplication now, and against
  * the Conversions API later). Never form fields, names, e-mails or phones: automatic configuration
  * is off (no automatic button/page events) and there is no advanced matching (also keep
  * "Automatic advanced matching" off in Events Manager).
@@ -70,9 +71,24 @@ function installBaseCode(host: PixelHost) {
   host.document.head.appendChild(script);
 }
 
+/**
+ * `_fbc` from the ad click id kept since the landing (src/lib/attribution/landing.ts): when the
+ * person accepts cookies on a later page, the URL no longer carries `fbclid` and Meta would lose
+ * the click. Meta's documented format, host-only cookie, 90 days; only after consent and only
+ * when Meta has not set it already.
+ */
+export function fbcCookie(click: { fbclid?: string; at?: string } | null | undefined, cookies: string, nowMs: number): string | null {
+  const fbclid = click?.fbclid?.trim();
+  if (!fbclid || !/^[A-Za-z0-9_.-]{10,500}$/.test(fbclid) || /(?:^|;\s*)_fbc=/.test(cookies)) return null;
+  const at = Date.parse(click?.at ?? "");
+  const created = Number.isFinite(at) && at <= nowMs ? at : nowMs;
+  return `_fbc=fb.1.${created}.${fbclid}; Max-Age=7776000; path=/; SameSite=Lax`;
+}
+
 export type MetaPixel = ReturnType<typeof createMetaPixel>;
 
-export function createMetaPixel(pixelId: string | null, getHost: () => PixelHost | undefined) {
+/** `site`: the website sent with every Lead (content_category), to tell the two websites apart in Meta. */
+export function createMetaPixel(pixelId: string | null, getHost: () => PixelHost | undefined, site = "likinagency.com") {
   let loaded = false;
   let granted = false;
   const sentInMemory = new Set<string>();
@@ -102,13 +118,21 @@ export function createMetaPixel(pixelId: string | null, getHost: () => PixelHost
       return loaded && granted;
     },
     /** The visitor accepted: load the pixel once (PageView included) or resume it. */
-    grant(): boolean {
+    grant(click?: { fbclid?: string; at?: string } | null): boolean {
       const host = getHost();
       if (!pixelId || !host) return false;
       granted = true;
       if (loaded) {
         call("consent", "grant");
         return true;
+      }
+      const fbc = fbcCookie(click, host.document.cookie, Date.now());
+      if (fbc) {
+        try {
+          host.document.cookie = fbc;
+        } catch {
+          // no cookie: Meta simply does not get the earlier click
+        }
       }
       installBaseCode(host);
       // Page views are sent explicitly, once per route: Meta's own history tracking is off and,
@@ -150,7 +174,7 @@ export function createMetaPixel(pixelId: string | null, getHost: () => PixelHost
       if (!/^[A-Za-z0-9_-]{8,100}$/.test(eventId) || (service !== "BUILD" && service !== "SCALE")) return false;
       if (sentInMemory.has(eventId) || remembered().includes(eventId)) return false;
       remember(eventId);
-      call("track", "Lead", { content_name: service, content_category: "qualification_form" }, { eventID: eventId });
+      call("track", "Lead", { content_name: service, content_category: site }, { eventID: eventId });
       return true;
     },
   };

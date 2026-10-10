@@ -13,8 +13,8 @@ export default function Page() {
         {
           h: "Cookies de medición de Meta (solo si las aceptas)",
           p: [
-            "Si aceptas en el aviso de cookies, cargamos el píxel de Meta (Meta Platforms Ireland) para saber qué anuncios nos traen visitas y solicitudes. Recibe las páginas que visitas en esta web y, cuando envías el formulario, un aviso de que se ha enviado una solicitud con un identificador de la solicitud, sin tus datos de contacto.",
-            "Instala en likinagency.com las cookies _fbp (identifica tu navegador ante Meta, 3 meses) y, si llegas desde un anuncio de Meta, _fbc (guarda el identificador de ese clic, 3 meses). Meta puede usar además sus propias cookies en sus dominios, según su política de privacidad (facebook.com/privacy/policy).",
+            "Si aceptas en el aviso de cookies, cargamos el píxel de Meta (Meta Platforms Ireland) para saber qué anuncios nos traen visitas y solicitudes. Recibe las páginas que visitas en esta web (con su dirección completa, incluidos los parámetros de campaña), y, cuando envías el formulario, un aviso con el tipo de formulario y un identificador de la solicitud, además de los datos técnicos de tu conexión y navegador, como la dirección IP. Nunca tu nombre, email, teléfono ni tus respuestas.",
+            "Instala en likinagency.com las cookies _fbp (identifica tu navegador ante Meta, 90 días) y, si llegaste desde un anuncio de Meta, _fbc (guarda el identificador de ese clic, 90 días). Meta puede usar además sus propias cookies en sus dominios, según su política de privacidad (facebook.com/privacy/policy).",
             "Si no aceptas, no se carga nada de Meta y la web funciona igual.",
           ],
         },

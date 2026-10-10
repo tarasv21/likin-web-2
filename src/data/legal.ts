@@ -18,8 +18,6 @@ export const legal = {
   address: "C/ Víctor Balaguer, 1, 1LL, 25200 Cervera, Lleida, España",
   /** Inscripción registral: no aplica a un empresario individual. */
   registry: "",
-  /** Servicio al que apunta LEAD_WEBHOOK_URL (el que envía hoy el email con cada solicitud). Pendiente de identificar. */
-  webhookService: "",
   /** Plazos de conservación de las solicitudes. Los decide el responsable con su asesor. */
   retention: "",
   /** Transferencias internacionales y su garantía, proveedor por proveedor. Se completa en la revisión jurídica. */
@@ -27,7 +25,9 @@ export const legal = {
   /** true cuando un profesional haya revisado los textos de privacidad, cookies y aviso legal. */
   reviewed: false,
   /** Fecha de la última actualización de los textos. */
-  updated: "10 de octubre de 2026",
+  updated: "11 de octubre de 2026",
+  /** Versión de la política de privacidad que se guarda con cada solicitud (sube con cada cambio de los textos). */
+  policyVersion: "likinagency-privacidad@2026-10-11",
 };
 
 export const pending = (value: string, what: string) => value.trim() || `[pendiente: ${what}]`;
