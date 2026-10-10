@@ -1,55 +1,58 @@
-# Revisión jurídica · textos de likinagency.com
+# Revisión jurídica · likinagency.com y tarasvasyliv.com
 
-> **Para Taras y el profesional que revise los textos. No es asesoramiento jurídico.** Actualizado el 2026-10-11 sobre la rama `feature/crm-ingestion` (preview de la rama). Las páginas siguen con el aviso de texto provisional y con «[pendiente]»; nada se marca como revisado ni se quita sin la aprobación de Taras. `npm run launch:check` no da el visto bueno mientras quede algo pendiente.
+> **Para Taras y el profesional que revise los textos. No es asesoramiento jurídico ni una aprobación.** Actualizado el 2026-10-11. Ramas `feature/crm-ingestion` de las dos webs (previews protegidos). Las páginas mantienen el aviso de texto provisional y «[pendiente]» en **transferencias internacionales** y **plazos de conservación**: nada se marca como revisado sin la aprobación de Taras.
 
-## Hechos verificados (2026-10-10/11)
+## 1. Correcciones factuales ya aplicadas (autorizadas por Taras el 2026-10-11)
 
-| Hecho | Cómo se verificó |
-|---|---|
-| Titular: Taras Vasyliv, empresario individual (autónomo), nombre comercial LIKIN Agency, NIF/NIE X7222864J, C/ Víctor Balaguer, 1, 1LL, 25200 Cervera, Lleida, España, taras@likinagency.com | Datos dados por Taras |
-| **`LEAD_WEBHOOK_URL` está vacía** (0 caracteres) en Production y Preview: **no hay ningún servicio de webhook** y nunca se ha enviado nada a ninguno; el código actual y el nuevo la tratan como desactivada | Compilación de prueba en Preview que solo informó de la longitud, con una variable sensible de control (sí visible) y sin ninguna petición |
-| El tipo de navegador (user agent) solo iba al webhook: con el webhook vacío **no se envía a nadie** | Código |
-| Datos del formulario, origen de la visita, consentimientos | Código |
-| Email de cada solicitud por **Resend** a **Google Workspace** (taras@likinagency.com), con el adjunto JSON | Código + prueba |
-| Resend envía hoy desde **Tokio (ap-northeast-1)**; según Resend, «All account data, including email metadata, logs, and API records, is stored in the United States regardless of the sending region» | DNS de `send.likinagency.com` + documentación de Resend (Regions) |
-| Funciones de la web en **Frankfurt (fra1)** tras el despliegue (hoy Washington, iad1) | `vercel.json` + preview de la rama |
-| Meta, solo tras «Aceptar»: `PageView` por página y un `Lead` por solicitud (servicio + id); sin coincidencia avanzada; la petición incluye la URL de la página (con sus parámetros de campaña e identificador de clic) y, como toda petición web, la IP y el navegador | Prueba de red con el píxel real |
-| Cookies `_fbp` y `_fbc`: **90 días** | Caducidad leída en el navegador tras cargar el píxel |
-| `likin.consent.v1` 12 meses (localStorage); `likin.qualify.v1` 2 h o hasta cerrar; `likin.touch.v1` y `likin.pixel.leads.v1` hasta cerrar la pestaña (sessionStorage) | Código |
+| Corrección | likinagency.com | tarasvasyliv.com |
+|---|---|---|
+| Webhook inexistente (`LEAD_WEBHOOK_URL` vacía) fuera de privacidad y documentación; fuera «tipo de navegador» (solo iba al webhook) | ✓ | no aplica |
+| Lo que recibe Meta: páginas con su dirección completa (parámetros de campaña e identificador de clic), aviso de solicitud o mensaje con el tipo de formulario y un identificador, identificadores de sus cookies, datos técnicos de conexión y navegador (IP); nunca nombre, email, teléfono, respuestas ni mensaje | ✓ | ✓ |
+| Registros de la aplicación (identificador y resultado, sin datos de contacto) distintos de los de Vercel (datos técnicos de las peticiones, como la IP) | ✓ | ✓ |
+| Cookies `_fbp` y `_fbc`: 90 días (comprobado en el navegador) | ✓ | ✓ |
+| «LIKIN Agency» como nombre comercial (casillas del formulario) | ✓ | — (web personal; titular Taras Vasyliv) |
+| Datos obligatorios del formulario y consecuencia de no darlos | ✓ | ✓ |
+| Versión de la política guardada con cada envío | `likinagency-privacidad@2026-10-11` | `tarasvasyliv-privacidad@2026-10-11` |
+| tarasvasyliv.com: páginas `/aviso-legal`, `/privacidad`, `/cookies` (no existían) y enlaces en el pie | — | ✓ |
 
-## A. Información que falta (campos «[pendiente]»)
+## 2. Propuesta para la revisión: proveedores, finalidades, países y garantías
 
-1. **Servicio del webhook** (`/privacidad` → «Quién más trata tus datos»): **resuelto, no existe**. Cambio propuesto, pendiente de tu aprobación: quitar esa línea y quitar «y el tipo de navegador» de «Qué datos tratamos».
-2. **Transferencias internacionales** (`/privacidad`): la redacta el profesional con estos hechos: Vercel (empresa de EE. UU.; funciones en Frankfurt), Resend (EE. UU.; envío desde Tokio o Irlanda; datos de cuenta, metadatos y registros en EE. UU.), Google (Google Workspace), Meta (Meta Platforms Ireland). El mecanismo de cada uno (decisión de adecuación, Marco de Privacidad UE-EE. UU., cláusulas tipo) sale de su contrato de encargo: no se ha comprobado.
-3. **Plazos de conservación** (`/privacidad`): los fija Taras con su asesor. Elementos a cubrir: emails de solicitudes en el buzón de Google, registros de Resend (plazo del plan de Resend: sin comprobar), datos de Meta (los conserva Meta según su política).
+Hechos comprobados en la configuración o en la documentación del proveedor; **las garantías no se han comprobado** y no se afirman en las páginas.
 
-## B. Afirmaciones que requieren validación jurídica o confirmación
+| Proveedor | Webs | Finalidad | Datos | Dónde (comprobado) | Garantía a comprobar |
+|---|---|---|---|---|---|
+| **Vercel Inc.** (EE. UU.) | las dos | Alojamiento y ejecución de la web, incluido el envío de los formularios | Todo lo que pasa por las peticiones; registros técnicos | Funciones en **Frankfurt (fra1)** en las dos webs (previews de las ramas). Sin comprobar: dónde guarda Vercel sus registros y la red de distribución | Contrato de encargo de Vercel y mecanismo de transferencia (¿Marco de Privacidad UE-EE. UU.? ¿cláusulas tipo?) |
+| **Resend Inc.** (EE. UU.) | likinagency.com (y tarasvasyliv.com si su formulario usa Resend) | Envío por email de cada solicitud o mensaje al buzón | Contenido del email y adjunto JSON | Envío desde **Tokio (ap-northeast-1)** hoy; **Irlanda (eu-west-1)** tras la migración que hará Taras. Resend: «All account data, including email metadata, logs, and API records, is stored in the United States regardless of the sending region» | Contrato de encargo de Resend; transferencia a EE. UU. (y a Japón mientras siga en Tokio: decisión de adecuación UE-Japón, a confirmar) |
+| **Google** (Google Workspace) | las dos | Buzón taras@likinagency.com donde se reciben las solicitudes | Emails recibidos | Sin comprobar (depende del contrato y la edición de Workspace) | Condiciones de tratamiento de datos de Google Workspace; entidad contratante y transferencias |
+| **Meta Platforms Ireland** | las dos, solo con consentimiento | Medición de anuncios (PageView y Lead) | Ver §1 | Entidad de la UE; sin comprobar el tratamiento posterior fuera de la UE | Condiciones de las herramientas para empresas de Meta (posible corresponsabilidad), transferencias a Meta Platforms Inc. |
+| Supabase (LIKIN CRM) | más adelante | Base de datos del CRM | Solicitudes y contactos | Proyecto de producción previsto en Frankfurt | Cuando se conecte el CRM |
 
-**Aviso legal**
-4. «La navegación por el sitio atribuye la condición de usuario e implica la aceptación de estas condiciones» (cláusula genérica).
-5. «Los contenidos… pertenecen a LIKIN Agency o a sus clientes, que han autorizado su uso»: **Taras** confirma que tiene autorización de los clientes que aparecen en /work.
-6. Sin cláusula de legislación y jurisdicción: decide el profesional.
+**Texto que puede salir de esto** (a redactar por el profesional): un párrafo por proveedor con país y garantía, o una remisión a los contratos de encargo; mencionar expresamente que Resend guarda metadatos y registros en EE. UU.
 
-**Privacidad**
-7. **Base jurídica**: consentimiento para responder, para novedades y para Meta. Validar, en especial para el seguimiento comercial y para medir canales y campañas (origen de la visita).
-8. **Valoración automática**: «Todas las solicitudes nos llegan y las atiende una persona» (**Taras** confirma la práctica) y el encaje con el art. 22 RGPD, porque el formulario muestra un siguiente paso según las respuestas.
-9. «No vendemos ni cedemos tus datos»: **Taras** confirma.
-10. Proveedores «que los tratan por nuestra cuenta» (encargados): requiere tener aceptados los contratos de encargo de Vercel, Resend y Google Workspace (**Taras** confirma).
-11. **Meta**: el texto dice «las páginas que visitas y el aviso de que has enviado una solicitud, sin tus datos de contacto». Es cierto, pero incompleto: propuesta añadir que también recibe la URL con los parámetros de campaña, la IP, datos del navegador y los identificadores de sus cookies; y validar el papel de Meta (posible corresponsabilidad).
-12. «Los registros técnicos de la web no guardan tus datos personales»: cierto para los registros de la aplicación; los registros de la plataforma (Vercel) guardan datos técnicos de las peticiones. Propuesta: «los registros de la aplicación».
-13. Falta indicar qué datos son obligatorios y qué pasa si no se dan (sin nombre, email, teléfono y la casilla no se puede responder).
-14. Derechos: valorar mencionar el de no ser objeto de decisiones automatizadas y la ausencia de delegado de protección de datos.
+## 3. Propuesta para la revisión: plazos de conservación
 
-**Cookies**
-15. «_fbp … 3 meses» y «_fbc … 3 meses»: verificado **90 días**; propuesta escribir «90 días».
-16. `likin.touch.v1` (origen de la visita) como almacenamiento técnico **sin consentimiento** (art. 22.2 LSSI): ¿es estrictamente necesario? Si no, va con el consentimiento (cambio pequeño de código).
-17. Primera capa del aviso (texto, botones «Rechazar»/«Aceptar» al mismo nivel, enlace) y validez de la decisión (12 meses) frente a la guía de la AEPD.
-18. «Meta puede usar además sus propias cookies en sus dominios» (genérico).
+Ningún plazo está decidido. Propuesta de partida, para validar o cambiar:
 
-**Formulario**
-19. Casilla obligatoria: «Acepto que Likin trate mis datos…» → propuesta «LIKIN Agency». Línea de información básica bajo las casillas: validar como primera capa.
-20. Técnico, al publicar: la versión de la política que se guarda con cada solicitud es `likinagency-privacidad@2026-09`; pasará a la versión de los textos aprobados.
+| Datos | Dónde | Propuesta | Por qué / qué falta comprobar |
+|---|---|---|---|
+| Solicitudes (likinagency.com) y mensajes (tarasvasyliv.com) | Buzón de Google | Mientras se gestiona la solicitud; si no hay relación comercial, **24 meses** desde el último contacto y después borrado. Al conectar el CRM, los emails se importan y se borran del buzón | Plazo comercial razonable; si hay contrato, los plazos legales que indique el asesor |
+| Copia en Resend (metadatos, registros y, según el plan, el contenido) | Resend (EE. UU.) | El mínimo que permita Resend | **Comprobar** en el panel de Resend cuánto conserva y si se puede reducir |
+| Registros de Vercel | Vercel | Lo que fije el plan Pro (1 día en los registros de ejecución) | Comprobar el resto de registros de la plataforma |
+| Decisión de cookies | Navegador | 12 meses (`likin.consent.v1`) | Hecho; validar frente a la guía de la AEPD |
+| Origen de la visita | Navegador | Hasta cerrar la pestaña | Hecho |
+| Datos en Meta | Meta | Según la política de Meta | Fuera del control del responsable |
+| CRM | Supabase | Política del CRM (OD-18) al conectarlo | Fuera de esta fase |
+
+## 4. Puntos que siguen requiriendo validación jurídica
+
+1. Base jurídica (consentimiento) para responder, para novedades, para medir canales y campañas y para Meta.
+2. Valoración automática del formulario de likinagency.com (estimación y siguiente paso) frente al art. 22 RGPD; «todas las solicitudes las atiende una persona» (Taras confirma).
+3. «No vendemos ni cedemos tus datos» y contratos de encargo aceptados (Vercel, Resend, Google): **Taras confirma**.
+4. Papel de Meta (posible corresponsabilidad) y texto de la primera capa del aviso de cookies; validez de la decisión (12 meses).
+5. `likin.touch.v1` (origen de la visita) sin consentimiento (art. 22.2 LSSI): ¿técnico o con consentimiento?
+6. Aviso legal: cláusula de aceptación por navegar; autorización de los clientes de /work (likinagency.com) y de los testimonios y marcas de terceros (tarasvasyliv.com); legislación y jurisdicción.
+7. Mención del delegado de protección de datos (no hay) y del derecho a no ser objeto de decisiones automatizadas.
 
 ## Cómo cerrar
 
-Con tu aprobación y el texto del profesional: aplicar 1, 11, 12, 13, 15 y 19 (redacción ya propuesta), rellenar transferencias y plazos, decidir 16 y poner `reviewed: true`. Claude lo hace; las páginas no cambian hasta entonces.
+Con el texto aprobado: rellenar `transfers` y `retention` (`src/data/legal.ts` en likinagency.com, `src/lib/legal.ts` en tarasvasyliv.com), aplicar la redacción que pida el profesional y, con la aprobación de Taras, `reviewed: true`. Si cambia el texto, sube `policyVersion`.
