@@ -20,33 +20,26 @@
 | Email real recibido sin CRM | preview de la rama, 2026-10-09 | ✓ confirmado por Taras |
 | El adjunto se importa al CRM con todo (contacto, empresa, 20/11 respuestas, cualificación, UTMs, `utm_id`, `fbclid`, id original) y no se duplica | CRM `feature/crm-production`, Supabase DEV | ✓ |
 
-## Paso 0 · Lo que configura Taras
+## Estado (2026-10-10, `npm run launch:check`)
 
-| # | Qué | Se comprueba con `npm run launch:check` |
+| # | Qué | Estado |
 |---|---|---|
-| T1 | `RESEND_API_KEY` de producción, solo Production, sensible | ✓ hecho (2026-10-10 01:26 UTC) |
-| T2 | Píxel de Meta: pasar el ID; desactivar «coincidencia avanzada automática» y la configuración automática de eventos | el ID lo añade Claude (paso 2) |
-| T3 | Titular, NIF, domicilio (registro si es sociedad), remitente de los emails del webhook; revisión jurídica de /privacidad, /cookies, /aviso-legal | «Textos legales» |
-| T4 | SPF `v=spf1 include:_spf.google.com ~all` (TXT `@`), DKIM de Google (TXT `google._domainkey`), DMARC `v=DMARC1; p=none` (TXT `_dmarc`); verificación en dos pasos en taras@likinagency.com | «Correo» (la verificación en dos pasos la confirma Taras) |
-| T5 | Vercel Pro | «plan Pro» |
-| T6 | Autorización: variables de Production, fusión en `main` y despliegue | — |
+| T1 | `RESEND_API_KEY` de producción, solo Production, sensible (y otra clave solo para el preview de la rama) | ✓ |
+| T2 | Píxel 2270277029972714 (el de LIKIN Agency); coincidencia avanzada automática, eventos automáticos y seguimiento sin código desactivados | ✓ (comprobado en su configuración pública; el código además apaga los eventos automáticos) |
+| T3 | Datos del titular en `/aviso-legal`, `/privacidad`, `/cookies` y bajo el formulario | ✓ |
+| T3b | Servicio del webhook, plazos de conservación, transferencias internacionales y revisión jurídica (`docs/LEGAL_REVIEW.md`) | **pendiente** |
+| T4 | SPF, DKIM y DMARC de Google; verificación en dos pasos | ✓ |
+| T5 | Vercel Pro (equipo `likin-agency`, activo; `likin-web-2`, `tarasvasyliv.com` y el preview del CRM en ese equipo, ninguno pausado) | ✓ |
+| V | Production: `LEAD_EMAIL_FROM` = `LIKIN Web <web@likinagency.com>`, `NEXT_PUBLIC_META_PIXEL_ID` = `2270277029972714` (añadidas el 2026-10-10; la producción actual, f981e35, no las usa) | ✓ |
+| T6 | Autorización definitiva de Taras para fusionar y desplegar | **pendiente** |
 
-## Paso 1 · Textos legales (Claude, en la rama)
+## Paso 1 · Cerrar los textos legales (Claude, en la rama)
 
-1. Rellenar `src/data/legal.ts` con T3 (`holder`, `taxId`, `address`, `registry` si aplica, `webhookService`). Commit y push: Vercel crea el preview de la rama.
-2. Taras revisa /privacidad, /cookies y /aviso-legal en el preview. Con su OK: `reviewed: true`, commit y push.
-3. `npm test && npm run lint && npm run typecheck` y CI en verde.
+Con el texto aprobado: rellenar `webhookService`, `retention` y `transfers` en `src/data/legal.ts`, aplicar los cambios de redacción y poner `reviewed: true`. Commit, push, CI en verde y `npm run launch:check` sin ✗.
 
-## Paso 2 · Variables de Production (Claude, con T6)
+## Paso 2 · Variables de Production
 
-```bash
-cd likinagency.com
-printf 'LIKIN Web <web@likinagency.com>' | npx vercel env add LEAD_EMAIL_FROM production --project likin-web-2 --scope likin-agency --no-sensitive --yes
-printf '<ID del píxel>' | npx vercel env add NEXT_PUBLIC_META_PIXEL_ID production --project likin-web-2 --scope likin-agency --no-sensitive --yes
-npm run launch:check        # todo ✓ antes de seguir
-```
-
-No se añade ninguna variable `CRM_INGEST_*` ni se toca `LEAD_WEBHOOK_URL`. `NEXT_PUBLIC_META_PIXEL_ID` se fija en el build: debe existir antes del despliegue.
+Ya están (ver V). Comprobación: `npm run launch:check`. No se añade ninguna variable `CRM_INGEST_*` ni se toca `LEAD_WEBHOOK_URL`.
 
 ## Paso 3 · Fusión y despliegue (Claude, con T6)
 
@@ -60,8 +53,12 @@ git push origin main        # Vercel despliega producción desde main
 Esperar `READY` y comprobar sin enviar ningún lead:
 
 ```bash
-npm run launch:check -- --after
+npm run launch:check -- --after                         # páginas, textos sin [pendiente], /api/lead sin crear nada, despliegue listo
+npm i --no-save playwright-core@1.63.0
+node scripts/qa-pixel.mjs https://www.likinagency.com    # píxel real: nada antes de aceptar, PageView ×2, solo PageView, sin datos de usuario, nada al rechazar
 ```
+
+`qa-pixel` abre una ventana de Chromium: dejarla delante hasta que se cierre (Meta no envía nada desde una página oculta ni desde navegadores sin ventana).
 
 ## Paso 4 · Prueba real (Taras, en el móvil, ~10 min)
 
@@ -76,6 +73,12 @@ npm run launch:check -- --after
 - Objetivo **Clientes potenciales**, conversión en **Sitio web**, evento **Lead** (opcional: conversiones personalizadas BUILD/SCALE por `content_name`).
 - Parámetros de URL: `utm_source=meta&utm_medium=paid_social&utm_campaign={{campaign.name}}&utm_term={{adset.name}}&utm_content={{ad.name}}&utm_id={{campaign.id}}`.
 - Meta solo ve a quien acepta cookies: el número real de leads son los emails.
+
+## Qué NO cambia este despliegue
+
+- **tarasvasyliv.com**: otro proyecto de Vercel; no se despliega ni cambia (su formulario sigue como hoy). Sus enlaces a likinagency.com siguen funcionando.
+- **CRM**: ninguna variable del CRM en `likin-web-2`; la web no llama al CRM. El preview del CRM y Supabase no se tocan.
+- **DNS**: no se toca. **`LEAD_WEBHOOK_URL`**: mismo valor y mismos campos que hoy.
 
 ## Vuelta atrás
 
