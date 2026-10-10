@@ -12,7 +12,8 @@
     "videos": "node scripts/encode-videos.mjs",
     "qa": "node scripts/qa-shot.mjs",
     "test": "node --import ./tests/register.mjs --test tests/*.test.mjs",
-    "secret-scan": "node scripts/secret-scan.mjs"
+    "secret-scan": "node scripts/secret-scan.mjs",
+    "launch:check": "node --import ./tests/register.mjs scripts/launch-check.mjs"
   },
   "dependencies": {
     "geist": "^1.7.2",
