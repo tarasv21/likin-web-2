@@ -2,7 +2,8 @@
  * Where a validated lead goes (SERVER ONLY), in order of trust:
  *   1. LIKIN CRM (signed relay)            → `crm`
  *   2. the optional legacy webhook          → `webhook` (every lead without the CRM; with it, only when the CRM does not have the lead)
- *   3. the backup e-mail when the CRM did not confirm a lead (down, slow, rejected, pending)
+ *   3. the e-mail when the CRM did not confirm a lead (down, slow, rejected, pending), or for every
+ *      lead without the CRM or with LEAD_EMAIL_ALWAYS=1
  * `stored` is true only when some durable channel has the lead; `channel` says which, so nothing
  * claims "in the CRM" when only the e-mail has it. With nothing configured the behaviour is the
  * historical one: `stored: false` (the result screen hands over the e-mail address).
@@ -47,6 +48,13 @@ export function legacyWebhookPayload(clean: Record<string, unknown>): Record<str
   return legacy;
 }
 
+/**
+ * LEAD_EMAIL_ALWAYS=1: with the CRM connected, keep one e-mail per lead as the notice outside the
+ * CRM (it then says "registrado" for leads the CRM confirmed). Without the CRM every lead is
+ * e-mailed anyway; without the flag the CRM era sends e-mails only as a backup.
+ */
+export const emailAlways = (env: Record<string, string | undefined>) => env.LEAD_EMAIL_ALWAYS?.trim() === "1";
+
 /** Only an http(s) URL counts as a configured webhook (anything else, e.g. "off", disables it). */
 export function webhookUrlFrom(raw: string | undefined): string | null {
   const v = raw?.trim();
@@ -74,7 +82,7 @@ export async function deliverLead(lead: Lead, deps: DeliverDeps): Promise<Delive
   const useWebhook = webhookUrl !== null && (!crmCfg || !isInCrm(crm?.status));
   const [webhook, emailed] = await Promise.all([
     useWebhook ? forwardWebhook(webhookUrl, deps.webhookPayload, doFetch) : Promise.resolve(null),
-    emailCfg && !isConfirmedLead(crm?.status) ? sendFallbackEmail(emailCfg, fallbackEmail(lead, crm, eventId, input), { fetch: doFetch }).then((r) => r.ok) : Promise.resolve(null),
+    emailCfg && (emailAlways(deps.env) || !isConfirmedLead(crm?.status)) ? sendFallbackEmail(emailCfg, fallbackEmail(lead, crm, eventId, input), { fetch: doFetch }).then((r) => r.ok) : Promise.resolve(null),
   ]);
 
   const channel: Channel = isConfirmedLead(crm?.status) ? "crm" : isInCrm(crm?.status) ? "crm_pending" : webhook ? "webhook" : emailed ? "email" : "none";

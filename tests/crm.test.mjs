@@ -243,6 +243,15 @@ describe("delivery decision (what the visitor is told)", () => {
     assert.deepEqual({ stored: d.stored, channel: d.channel, emailed: d.emailed }, { stored: true, channel: "crm", emailed: null });
     assert.equal(f.calls.filter((c) => c.url === RESEND).length, 0);
   });
+  test("LEAD_EMAIL_ALWAYS=1: with the CRM confirming the lead, one notice e-mail still goes out and says it is registered", async () => {
+    const f = fakeFetch({ [CFG.url]: [json(200, { status: "processed" })], [RESEND]: [json(200, {})] });
+    const d = await deliverLead(lead(), deps({ ...ENV, ...EMAIL_ENV, LEAD_EMAIL_ALWAYS: "1" }, f));
+    assert.deepEqual({ channel: d.channel, emailed: d.emailed, stored: d.stored }, { channel: "crm", emailed: true, stored: true });
+    const mail = JSON.parse(f.calls.find((c) => c.url === RESEND).body);
+    assert.match(mail.text, /Estado en el CRM: registrado/);
+    const off = fakeFetch({ [CFG.url]: [json(200, { status: "processed" })] });
+    assert.equal((await deliverLead(lead(), deps({ ...ENV, ...EMAIL_ENV }, off))).emailed, null, "without the flag the CRM era sends no e-mail");
+  });
   test("CRM down → the backup e-mail keeps the lead, and says it is NOT in the CRM", async () => {
     const f = fakeFetch({ [CFG.url]: [new TypeError("x"), new TypeError("x"), new TypeError("x")], [RESEND]: [json(200, {})] });
     const d = await deliverLead(lead(), deps({ ...ENV, ...EMAIL_ENV }, f));

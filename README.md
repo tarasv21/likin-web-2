@@ -14,7 +14,7 @@ npm run typecheck  # tsc
 npm run lint       # eslint
 ```
 
-Variables de entorno opcionales en `.env.example`. `CRM_INGEST_URL`, `CRM_INGEST_KEY_ID` y `CRM_INGEST_SECRET` envían cada lead a LIKIN CRM (firmado, solo servidor); `RESEND_API_KEY` y `LEAD_EMAIL_FROM` (las dos) activan el email del lead: sin CRM, de cada lead; con CRM, solo de respaldo; `LEAD_WEBHOOK_URL` reenvía cada lead a un webhook (Make, Zapier, n8n, Slack…); `NEXT_PUBLIC_META_PIXEL_ID` activa el aviso de cookies y el píxel de Meta. Sin ninguna no se guarda nada y el formulario se lo dice al usuario en vez de prometer una respuesta.
+Variables de entorno opcionales en `.env.example`. `CRM_INGEST_URL`, `CRM_INGEST_KEY_ID` y `CRM_INGEST_SECRET` envían cada lead a LIKIN CRM (firmado, solo servidor); `RESEND_API_KEY` y `LEAD_EMAIL_FROM` (las dos) activan el email del lead: sin CRM, de cada lead; con CRM, solo de respaldo, salvo con `LEAD_EMAIL_ALWAYS=1` (un email por lead como aviso fuera del CRM); `LEAD_WEBHOOK_URL` reenvía cada lead a un webhook (Make, Zapier, n8n, Slack…); `NEXT_PUBLIC_META_PIXEL_ID` activa el aviso de cookies y el píxel de Meta. Sin ninguna no se guarda nada y el formulario se lo dice al usuario en vez de prometer una respuesta.
 
 Datos legales (titular, NIF, domicilio, servicio del webhook): `src/data/legal.ts`. Lo que falte se ve como «[pendiente]» en las páginas legales, y el aviso de texto provisional sigue hasta marcar `reviewed` tras la revisión jurídica.
 
