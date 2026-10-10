@@ -23,6 +23,7 @@ type FbqFn = ((...args: unknown[]) => void) & {
   loaded: boolean;
   version: string;
   disablePushState?: boolean;
+  allowDuplicatePageViews?: boolean;
 };
 
 export type PixelHost = {
@@ -110,7 +111,12 @@ export function createMetaPixel(pixelId: string | null, getHost: () => PixelHost
         return true;
       }
       installBaseCode(host);
-      if (host.fbq) host.fbq.disablePushState = true; // page views are sent explicitly, once per route
+      // Page views are sent explicitly, once per route: Meta's own history tracking is off and,
+      // without it, Meta drops every PageView after the first one of the document unless allowed.
+      if (host.fbq) {
+        host.fbq.disablePushState = true;
+        host.fbq.allowDuplicatePageViews = true;
+      }
       call("consent", "grant");
       call("set", "autoConfig", false, pixelId);
       call("init", pixelId);

@@ -91,6 +91,7 @@ describe("Meta Pixel", () => {
     assert.equal(f.scripts[0].src, META_PIXEL_SRC);
     assert.equal(f.scripts[0].async, true);
     assert.equal(f.host.fbq.disablePushState, true);
+    assert.equal(f.host.fbq.allowDuplicatePageViews, true, "client-side navigations must reach Meta (one PageView per route)");
     assert.deepEqual(f.calls(), [
       ["consent", "grant"],
       ["set", "autoConfig", false, "1234567890"],
