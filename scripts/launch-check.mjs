@@ -77,6 +77,9 @@ ok("SPF con Google", spf.length === 1 && spf[0].includes("include:_spf.google.co
 ok("DKIM de Google (google._domainkey)", (await txt("google._domainkey.likinagency.com")).some((t) => t.includes("v=DKIM1") || t.includes("p=")));
 ok("DMARC", (await txt("_dmarc.likinagency.com")).some((t) => t.startsWith("v=DMARC1")));
 ok("DKIM de Resend (resend._domainkey)", (await txt("resend._domainkey.likinagency.com")).some((t) => t.includes("p=")));
+const sendMx = await resolveMx("send.likinagency.com").catch(() => []);
+const region = /feedback-smtp\.([a-z0-9-]+)\.amazonses\.com/.exec(sendMx[0]?.exchange ?? "")?.[1];
+console.log(`· región de envío de Resend: ${region ?? "desconocida"}${region === "ap-northeast-1" ? " (Tokio)" : region === "eu-west-1" ? " (Irlanda)" : ""}`);
 
 if (after) {
   console.log(`— Web en producción (${SITE}), sin enviar ningún lead`);

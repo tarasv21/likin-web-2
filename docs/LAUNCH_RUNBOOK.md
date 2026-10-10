@@ -4,8 +4,9 @@
 
 ## Qué hace la web al publicarla
 
-- Cada lead BUILD/SCALE va **a la vez** al webhook de siempre (`LEAD_WEBHOOK_URL`, sin tocar, mismos campos que hoy) y por **email de Resend** a taras@likinagency.com. El email es el registro del lead y lleva el adjunto `lead-<id>.json`, importable al CRM más adelante con el mismo id.
-- Se pierde solo si fallan a la vez el webhook y Resend (con un reintento); el visitante ve el error con taras@likinagency.com.
+- Cada lead BUILD/SCALE va por **email de Resend** a taras@likinagency.com. El email es el registro del lead y lleva el adjunto `lead-<id>.json`, importable al CRM más adelante con el mismo id.
+- `LEAD_WEBHOOK_URL` existe pero está **vacía** (comprobado el 2026-10-11): no hay webhook y no se envía nada a ningún otro servicio. Resend es el **único** canal hasta conectar el CRM.
+- Si Resend falla (con un reintento), el visitante ve el error con taras@likinagency.com y el log de Vercel registra `channel: 'none'`.
 - Sin variables del CRM en Production: la web funciona sin CRM.
 - Píxel de Meta solo con consentimiento: `PageView` y un `Lead` por lead confirmado, con `eventID` = id del lead.
 
@@ -27,7 +28,7 @@
 | T1 | `RESEND_API_KEY` de producción, solo Production, sensible (y otra clave solo para el preview de la rama) | ✓ |
 | T2 | Píxel 2270277029972714 (el de LIKIN Agency); coincidencia avanzada automática, eventos automáticos y seguimiento sin código desactivados | ✓ (comprobado en su configuración pública; el código además apaga los eventos automáticos) |
 | T3 | Datos del titular en `/aviso-legal`, `/privacidad`, `/cookies` y bajo el formulario | ✓ |
-| T3b | Servicio del webhook, plazos de conservación, transferencias internacionales y revisión jurídica (`docs/LEGAL_REVIEW.md`) | **pendiente** |
+| T3b | Textos legales: quitar el webhook (no existe: variable vacía), plazos de conservación, transferencias internacionales, correcciones propuestas y revisión jurídica (`docs/LEGAL_REVIEW.md`) | **pendiente** |
 | T4 | SPF, DKIM y DMARC de Google; verificación en dos pasos | ✓ |
 | T5 | Vercel Pro (equipo `likin-agency`, activo; `likin-web-2`, `tarasvasyliv.com` y el preview del CRM en ese equipo, ninguno pausado) | ✓ |
 | V | Production: `LEAD_EMAIL_FROM` = `LIKIN Web <web@likinagency.com>`, `NEXT_PUBLIC_META_PIXEL_ID` = `2270277029972714` (añadidas el 2026-10-10; la producción actual, f981e35, no las usa) | ✓ |
@@ -65,8 +66,8 @@ node scripts/qa-pixel.mjs https://www.likinagency.com    # píxel real: nada ant
 1. Abrir https://www.likinagency.com/escalar-ecommerce?utm_source=meta&utm_medium=paid_social&utm_campaign=prueba_lanzamiento en el móvil (navegación privada).
 2. «Aceptar» cookies → completar SCALE con datos propios y doble clic en «Enviar solicitud».
 3. Repetir con BUILD en /crear-tienda-online.
-4. Comprobar: **dos emails por lead** (el del servicio del webhook, como siempre, y «LIKIN Web» con el adjunto `lead-….json`); en Meta → Administrador de eventos, `PageView` y `Lead` (con `content_name` BUILD/SCALE).
-5. Claude revisa en los logs de Vercel una línea `[lead]` por envío con `channel`, `crm: not_configured`, `emailed: true`, `webhook: true`.
+4. Comprobar: **un email por lead** («LIKIN Web» con el adjunto `lead-….json`); en Meta → Administrador de eventos, `PageView` y `Lead` (con `content_name` BUILD/SCALE).
+5. Claude revisa en los logs de Vercel una línea `[lead]` por envío con `channel: 'email'`, `crm: not_configured`, `emailed: true`, `webhook: null`.
 
 ## Paso 5 · Meta Ads (Taras)
 
@@ -78,7 +79,7 @@ node scripts/qa-pixel.mjs https://www.likinagency.com    # píxel real: nada ant
 
 - **tarasvasyliv.com**: otro proyecto de Vercel; no se despliega ni cambia (su formulario sigue como hoy). Sus enlaces a likinagency.com siguen funcionando.
 - **CRM**: ninguna variable del CRM en `likin-web-2`; la web no llama al CRM. El preview del CRM y Supabase no se tocan.
-- **DNS**: no se toca. **`LEAD_WEBHOOK_URL`**: mismo valor y mismos campos que hoy.
+- **DNS**: no se toca. **`LEAD_WEBHOOK_URL`**: sin cambios (sigue vacía, es decir, sin webhook).
 
 ## Vuelta atrás
 
@@ -86,12 +87,12 @@ node scripts/qa-pixel.mjs https://www.likinagency.com    # píxel real: nada ant
 npx vercel rollback dpl_3WWkmGvqbngf9si9v1qN4eM9Us3M --scope likin-agency   # producción anterior (f981e35)
 ```
 
-Restaura el comportamiento de hoy (solo webhook). Los leads del intervalo están en los emails de Resend y en el webhook (mismo `lead_id`). Para dejar `main` como estaba: `git revert -m 1 <commit de la fusión>` y push.
+Restaura la web de hoy (que no guarda solicitudes: webhook vacío). Los leads del intervalo están en los emails de Resend. Para dejar `main` como estaba: `git revert -m 1 <commit de la fusión>` y push.
 
-**Interruptores sin despliegue de código:** quitar `NEXT_PUBLIC_META_PIXEL_ID` y redesplegar apaga el píxel y el aviso de cookies; quitar `RESEND_API_KEY` deja solo el webhook.
+**Interruptores sin despliegue de código:** quitar `NEXT_PUBLIC_META_PIXEL_ID` y redesplegar apaga el píxel y el aviso de cookies; quitar `RESEND_API_KEY` deja la web sin canal de recepción (no hacerlo).
 
 ## Vigilancia (primeras 48 h)
 
-- Cada lead: dos emails. Si llega uno solo, avisar: el otro canal ha fallado (el lead no se pierde).
+- Cada lead: un email. Si un visitante dice que envió y no hay email, revisar el log (`channel: 'none'`).
 - Logs de Vercel (Pro: 1 día): ninguna línea `[lead]` con `channel: 'none'` ni 5xx en `/api/lead`.
 - Resend → Emails: entregados. Meta → Administrador de eventos: `Lead` ≤ emails (solo cuenta a quien acepta cookies).
