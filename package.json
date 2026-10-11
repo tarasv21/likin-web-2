@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
+    "test": "node --import ./tests/register.mjs --test tests/*.test.mjs",
     "assets": "node scripts/prepare-assets.mjs",
     "videos": "node scripts/encode-videos.mjs",
     "qa": "node scripts/qa-shot.mjs"

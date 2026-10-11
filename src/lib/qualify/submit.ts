@@ -89,12 +89,12 @@ export type SubmitResult = { ok: true; stored: boolean } | { ok: false; error: s
  * else in the form changes. `stored` reports whether the lead was actually persisted
  * downstream, so the UI never claims more than what happened.
  */
-export async function submitLead(lead: Lead, honeypot: string): Promise<SubmitResult> {
+export async function submitLead(lead: Lead, honeypot: string, meta?: { consent: boolean; event_id: string }): Promise<SubmitResult> {
   try {
     const res = await fetch("/api/lead", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ lead, website_url: honeypot }),
+      body: JSON.stringify({ lead, website_url: honeypot, ...(meta ? { meta } : {}) }),
       signal: AbortSignal.timeout(12000),
     });
     const data = (await res.json().catch(() => ({}))) as { ok?: boolean; stored?: boolean; error?: string };

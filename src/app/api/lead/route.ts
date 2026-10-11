@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { metaLeadFromRequest } from "@/lib/meta-capi-lead";
 
 /**
  * Lead intake for the qualification form.
@@ -84,5 +85,6 @@ export async function POST(req: Request) {
   } catch {
     return bad("No hemos podido registrar tu solicitud. Inténtalo de nuevo.", 502);
   }
+  await metaLeadFromRequest(req, b, clean);
   return NextResponse.json({ ok: true, stored: true });
 }

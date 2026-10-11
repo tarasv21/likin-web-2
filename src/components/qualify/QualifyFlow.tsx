@@ -12,6 +12,7 @@ import { track } from "@/lib/qualify/events";
 import { clearSession, loadSession, readAttribution, saveSession } from "@/lib/qualify/session";
 import { buildLead, submitLead } from "@/lib/qualify/submit";
 import { useReducedMotion } from "@/lib/hooks";
+import { SITE, metaConsented, trackEvent } from "@/lib/meta";
 import type { Answers, Contact, Question, Service, Verdict } from "@/lib/qualify/types";
 
 type Stage = { kind: "question"; q: Question } | { kind: "contact" } | { kind: "result" };
@@ -203,13 +204,17 @@ export function QualifyFlow({ service, source, onClose, onSwitchToBuild }: { ser
     setSending(true);
     setSendError(null);
     const lead = buildLead({ service, answers, verdict, attribution: attribution.current, contact });
-    const res = await submitLead(lead, honeypot.current);
+    // Meta: con consentimiento, el servidor manda el Lead a la API con el id del lead (el del píxel).
+    const consented = metaConsented();
+    const res = await submitLead(lead, honeypot.current, consented ? { consent: true, event_id: lead.lead_id } : undefined);
     setSending(false);
     if (!res.ok) {
       setSendError(res.error);
       return;
     }
     setStored(res.stored);
+    // Lead en el píxel solo si la solicitud se ha recibido de verdad (y una vez por lead).
+    if (res.stored && consented) trackEvent("Lead", { content_name: service, content_category: SITE }, { eventId: lead.lead_id, server: false });
     track("qualification_submitted", { service, qualification: verdict.qualification, next_action: verdict.next_action, lead_score: verdict.lead_score, reasons: verdict.qualification_reasons, ok: true });
     if (verdict.requires_manual_review) track("manual_review_submitted", { service, qualification: verdict.qualification });
     clearSession();
