@@ -42,7 +42,8 @@ export default function Page() {
           p: [
             "No vendemos ni cedemos tus datos. Para funcionar usamos estos proveedores, que los tratan por nuestra cuenta:",
             "Vercel: alojamiento y funcionamiento de la web, incluido el envío del formulario.",
-            "Resend: envío del email con tu solicitud a nuestro buzón.",
+            "Supabase: base de datos de LIKIN CRM, nuestra herramienta interna, donde guardamos tu solicitud y su seguimiento. Está alojada en Fráncfort (Alemania).",
+            "Resend: envío del email con tu solicitud y con el aviso de que ha llegado a nuestro buzón.",
             "Google: correo electrónico de LIKIN Agency (Google Workspace), donde recibimos tu solicitud, y, solo si aceptas las cookies de medición, Google Analytics, que recibe las páginas que visitas, de dónde llegas y cómo navegas, con el identificador de su cookie y datos técnicos de tu navegador y dispositivo. A Google Analytics no le enviamos tu nombre, tu email, tu teléfono ni tus respuestas.",
             "Microsoft (Microsoft Clarity): solo si aceptas las cookies de medición. Recibe cómo navegas por la web (clics, desplazamiento y páginas, para mapas de calor y grabaciones de la navegación), con el identificador de su cookie y datos técnicos de tu navegador y dispositivo. Lo que escribes o eliges en el formulario queda oculto y no se graba.",
             "Meta Platforms Ireland: solo si aceptas las cookies de medición. Desde tu navegador (píxel) y desde nuestro servidor (API de Conversiones) recibe las páginas que visitas (con la dirección completa, incluidos los parámetros de campaña y el identificador del clic), los clics en nuestro email, en el enlace de reserva y en el botón de pago, cuándo abres el formulario (y desde qué botón) y cuándo llegas a su último paso, y el aviso de que has enviado una solicitud con el tipo de formulario y la valoración de encaje que calcula el formulario (por ejemplo, «encaje alto» o «revisión manual»), con un identificador de cada evento, los identificadores de sus cookies y los datos técnicos de tu conexión y navegador, como la dirección IP. Cuando envías el formulario, también tu email, tu teléfono y tu nombre de pila, cifrados con un hash irreversible (SHA-256) antes de salir de nuestro servidor, para que Meta pueda relacionar la solicitud con tu cuenta. Nunca tus respuestas.",
@@ -54,7 +55,7 @@ export default function Page() {
           h: "Tus derechos",
           p: [`Puedes pedir acceso, rectificación, supresión, oposición, limitación del tratamiento y portabilidad escribiendo a ${site.email}. Si crees que no hemos tratado bien tus datos, puedes reclamar ante la Agencia Española de Protección de Datos (aepd.es).`],
         },
-        { h: "Seguridad", p: ["La web funciona con conexión cifrada y las claves de los servicios solo están en el servidor. Los registros de la aplicación guardan un identificador y el resultado de cada envío, sin tus datos de contacto ni tus respuestas. Vercel, como proveedor de alojamiento, registra datos técnicos de las peticiones (como la dirección IP) para el funcionamiento y la seguridad del servicio."] },
+        { h: "Seguridad", p: ["La web funciona con conexión cifrada y las claves de los servicios solo están en el servidor. El CRM solo es accesible para nuestro equipo, con verificación en dos pasos para los administradores. Los registros de la aplicación guardan un identificador y el resultado de cada envío, sin tus datos de contacto ni tus respuestas. Vercel, como proveedor de alojamiento, registra datos técnicos de las peticiones (como la dirección IP) para el funcionamiento y la seguridad del servicio."] },
       ]}
     />
   );
