@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useJsFlag } from "@/lib/hooks";
+import { captureLanding } from "@/lib/attribution/landing";
 import dynamic from "next/dynamic";
 
 /** The qualification system is only needed once someone acts on a CTA: keep it out of the
@@ -39,6 +40,12 @@ export function Providers({ children }: { children: ReactNode }) {
     [pathname],
   );
   const close = useCallback(() => setOpen(false), []);
+
+  // Attribution of the visit: read the landing URL before anything rewrites it (the deep-link
+  // handler below replaces the URL and would drop ?utm_… and click ids).
+  useEffect(() => {
+    captureLanding();
+  }, []);
 
   // Deep links: /crear-tienda-online#lead-build opens the flow directly
   useEffect(() => {

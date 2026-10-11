@@ -79,6 +79,8 @@ export function buildLead({ service, answers, verdict, attribution, contact }: {
     consent_nurture: contact?.consent_nurture,
 
     answers,
+
+    touch: attribution.touch,
   };
 }
 
@@ -95,7 +97,8 @@ export async function submitLead(lead: Lead, honeypot: string, meta?: { consent:
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ lead, website_url: honeypot, ...(meta ? { meta } : {}) }),
-      signal: AbortSignal.timeout(12000),
+      // The server sends the e-mail (and the Lead to Meta, with consent) before answering: give it time.
+      signal: AbortSignal.timeout(20000),
     });
     const data = (await res.json().catch(() => ({}))) as { ok?: boolean; stored?: boolean; error?: string };
     if (!res.ok || !data.ok) return { ok: false, error: data.error ?? "No hemos podido enviar tu solicitud." };

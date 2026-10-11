@@ -36,6 +36,40 @@ export type Contact = {
   consent_nurture: boolean;
 };
 
+/**
+ * The arrival that started this visit, captured when the person LANDS on the site (before any
+ * URL rewrite) and kept for the tab's session (sessionStorage, never a cookie, never shared).
+ * Only the landing path (no query string), the referring host and the campaign parameters.
+ */
+export type LandingTouch = {
+  occurred_at: string;
+  landing_path: string;
+  referrer_host?: string;
+  utm_source?: string;
+  utm_medium?: string;
+  utm_campaign?: string;
+  utm_id?: string;
+  utm_content?: string;
+  utm_term?: string;
+  fbclid?: string;
+  gclid?: string;
+  ttclid?: string;
+  /** Arrival from tarasvasyliv.com in this visit (OD-16): the hop, its CTA and the origin it reported. */
+  cross?: CrossSiteHop;
+};
+
+/**
+ * A hop from tarasvasyliv.com to this site. `origin` is what that site reported about how the
+ * person reached IT (campaign parameters and referrer host only; never click ids). Untrusted.
+ */
+export type CrossSiteHop = {
+  site: "tarasvasyliv.com";
+  cta?: string;
+  at: string;
+  landing_path: string;
+  origin?: { utm_source?: string; utm_medium?: string; utm_campaign?: string; utm_content?: string; referrer_host?: string };
+};
+
 export type Attribution = {
   source: string;
   landing_page: string;
@@ -45,6 +79,8 @@ export type Attribution = {
   utm_content?: string;
   utm_term?: string;
   referrer?: string;
+  /** The landing touch of the visit (the CRM's session touch). */
+  touch?: LandingTouch;
 };
 
 export type Verdict = {
@@ -113,6 +149,9 @@ export type Lead = {
 
   /** Everything else, verbatim, so no answer is ever lost. */
   answers: Answers;
+
+  /** The landing touch of the visit (attribution captured on arrival). */
+  touch?: LandingTouch;
 };
 
 /* ── Questions ───────────────────────────────────────────────────────────── */

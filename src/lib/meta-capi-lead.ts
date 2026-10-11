@@ -1,6 +1,18 @@
 import { buildEvent, capiConfigFrom, clientIp, readCookie, sendCapi } from "@/lib/meta-capi";
 
 /**
+ * `_fbc` desde la llegada a la web (lead.touch) cuando no hay cookie: el fbclid del anuncio con la
+ * hora del clic, en el formato de Meta. Sin fbclid válido, nada.
+ */
+export function fbcFromTouch(touch: unknown, nowMs: number): string | undefined {
+  const t = (touch && typeof touch === "object" ? touch : {}) as { fbclid?: unknown; occurred_at?: unknown };
+  const fbclid = typeof t.fbclid === "string" ? t.fbclid.trim() : "";
+  if (!/^[A-Za-z0-9_.-]{10,500}$/.test(fbclid)) return undefined;
+  const at = typeof t.occurred_at === "string" ? Date.parse(t.occurred_at) : NaN;
+  return `fb.1.${Number.isFinite(at) && at <= nowMs ? at : nowMs}.${fbclid}`;
+}
+
+/**
  * El Lead de la API de Conversiones, desde el servidor, cuando la solicitud se ha recibido: solo si
  * el visitante aceptó las cookies de medición (`meta.consent`), con el id del lead como event_id (el
  * mismo que el píxel) y su email, teléfono y nombre normalizados y con hash SHA-256 aquí. Nunca
@@ -23,7 +35,7 @@ export async function metaLeadFromRequest(req: Request, body: Record<string, unk
         ip: clientIp(req.headers),
         userAgent: req.headers.get("user-agent") ?? undefined,
         fbp: readCookie(cookies, "_fbp"),
-        fbc: readCookie(cookies, "_fbc"),
+        fbc: readCookie(cookies, "_fbc") ?? fbcFromTouch(lead.touch, Date.now()),
         custom: { content_name: String(lead.service ?? ""), content_category: "likinagency.com" },
         person: { email: text(lead.email), phone: text(lead.phone), name: text(lead.contact_name) },
       }),

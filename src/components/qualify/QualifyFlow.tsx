@@ -13,7 +13,9 @@ import { clearSession, loadSession, readAttribution, saveSession } from "@/lib/q
 import { buildLead, submitLead } from "@/lib/qualify/submit";
 import { useReducedMotion } from "@/lib/hooks";
 import { SITE, metaConsented, trackEvent } from "@/lib/meta";
-import type { Answers, Contact, Question, Service, Verdict } from "@/lib/qualify/types";
+import { legal } from "@/data/legal";
+import { site } from "@/data/site";
+import type { Answers, Contact, Lead, Question, Service, Verdict } from "@/lib/qualify/types";
 
 type Stage = { kind: "question"; q: Question } | { kind: "contact" } | { kind: "result" };
 
@@ -42,6 +44,13 @@ export function QualifyFlow({ service, source, onClose, onSwitchToBuild }: { ser
   const [limitNotice, setLimitNotice] = useState<string | null>(null);
   const honeypot = useRef("");
   const attribution = useRef(readAttribution(source));
+  // The submission being sent: kept (same id, same time) while its content does not change, so a
+  // retry after a failure is the SAME logical submission (same lead id, same Meta event id), and a
+  // changed form is a new one.
+  const pending = useRef<{ key: string; lead: Lead } | null>(null);
+  // Synchronous guard: two clicks in the same frame both see `sending === false` (state updates
+  // land on the next render), so the ref is what really stops a second request.
+  const inFlight = useRef(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const formRef = useRef<HTMLDivElement>(null);
   const startedRef = useRef(false);
@@ -200,18 +209,23 @@ export function QualifyFlow({ service, source, onClose, onSwitchToBuild }: { ser
   };
 
   const send = async () => {
-    if (!validateContact() || sending) return;
+    if (!validateContact() || sending || inFlight.current) return;
+    inFlight.current = true;
     setSending(true);
     setSendError(null);
-    const lead = buildLead({ service, answers, verdict, attribution: attribution.current, contact });
+    const key = JSON.stringify({ service, answers, contact });
+    if (pending.current?.key !== key) pending.current = { key, lead: buildLead({ service, answers, verdict, attribution: attribution.current, contact }) };
+    const lead = pending.current.lead;
     // Meta: con consentimiento, el servidor manda el Lead a la API con el id del lead (el del píxel).
     const consented = metaConsented();
     const res = await submitLead(lead, honeypot.current, consented ? { consent: true, event_id: lead.lead_id } : undefined);
+    inFlight.current = false;
     setSending(false);
     if (!res.ok) {
       setSendError(res.error);
       return;
     }
+    pending.current = null;
     setStored(res.stored);
     // Lead en el píxel solo si la solicitud se ha recibido de verdad (y una vez por lead).
     if (res.stored && consented) trackEvent("Lead", { content_name: service, content_category: SITE }, { eventId: lead.lead_id, server: false });
@@ -282,11 +296,13 @@ export function QualifyFlow({ service, source, onClose, onSwitchToBuild }: { ser
           )}
 
           {stage.kind === "contact" && (
-            <div>
+            // Like the questions, only the fields scroll: on a phone the contact step is taller
+            // than the sheet, and without its own scroll region the consent box was out of reach.
+            <div className="flex min-h-0 flex-col">
               <h2 ref={headingRef} tabIndex={-1} className="text-h3 outline-none">
                 Último paso. <span className="text-steel">¿Con quién hablamos?</span>
               </h2>
-              <div ref={formRef} className="mt-7 grid gap-5">
+              <div ref={formRef} className="qz-scroll mt-7 grid min-h-0 gap-5 overflow-y-auto overscroll-contain pr-1">
                 <LabelledField label="Nombre y apellidos" error={contactErrors.contact_name}>
                   {(id, d) => <input id={id} aria-describedby={d} autoComplete="name" value={contact.contact_name} onChange={(e) => setContact({ ...contact, contact_name: e.target.value })} className={inputCls(contactErrors.contact_name)} />}
                 </LabelledField>
@@ -305,11 +321,16 @@ export function QualifyFlow({ service, source, onClose, onSwitchToBuild }: { ser
 
                 <div className="grid gap-3 border-t border-hairline pt-5">
                   <Consent checked={contact.consent_contact} onChange={(v) => setContact({ ...contact, consent_contact: v })} error={contactErrors.consent_contact}>
-                    Acepto que Likin trate mis datos para responder a esta solicitud, según la <a href="/privacidad" className="text-cloud underline underline-offset-2 hover:text-teal">política de privacidad</a>.
+                    Acepto que LIKIN Agency trate mis datos para responder a esta solicitud, según la{" "}
+                    <a href="/privacidad" target="_blank" rel="noopener" className="text-cloud underline underline-offset-2 hover:text-teal">
+                      política de privacidad
+                    </a>
+                    .
                   </Consent>
                   <Consent checked={contact.consent_nurture} onChange={(v) => setContact({ ...contact, consent_nurture: v })}>
-                    Quiero recibir también contenidos y novedades de Likin. <span className="text-steel">Opcional.</span>
+                    Quiero recibir también contenidos y novedades de LIKIN Agency. <span className="text-steel">Opcional.</span>
                   </Consent>
+                  <p className="text-xs leading-relaxed text-steel">Responsable: {legal.holder} ({legal.tradeName}). Finalidad: valorar tu proyecto y responderte. Derechos: acceso, rectificación, supresión y otros en {site.email}. Más información en la política de privacidad.</p>
                 </div>
 
                 {/* Honeypot. Off-screen, never announced, never focusable. */}

@@ -164,3 +164,15 @@ describe('Contact links', () => {
     assert.match(CONTACT_LINKS, /mailto:.*tel:.*wa\.me\/.*whatsapp\.com\//);
   });
 });
+
+import { fbcFromTouch } from '../src/lib/meta-capi-lead.ts';
+
+describe('Lead fbc from the landing touch', () => {
+  test('fbclid of the arrival with the click time; nothing without a valid fbclid', () => {
+    const now = Date.parse('2026-10-11T10:00:00.000Z');
+    assert.equal(fbcFromTouch({ fbclid: 'IwAR0qacapitest01', occurred_at: '2026-10-11T09:55:00.000Z' }, now), `fb.1.${Date.parse('2026-10-11T09:55:00.000Z')}.IwAR0qacapitest01`);
+    assert.equal(fbcFromTouch({ fbclid: 'IwAR0qacapitest01', occurred_at: '2030-01-01T00:00:00.000Z' }, now), `fb.1.${now}.IwAR0qacapitest01`);
+    assert.equal(fbcFromTouch({ fbclid: 'IwAR0qacapitest01' }, now), `fb.1.${now}.IwAR0qacapitest01`);
+    for (const t of [undefined, null, {}, { fbclid: 'short' }, { fbclid: 'bad value <script>' }, 'IwAR0qacapitest01']) assert.equal(fbcFromTouch(t, now), undefined);
+  });
+});
