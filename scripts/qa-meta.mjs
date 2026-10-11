@@ -6,8 +6,9 @@
  *     RESEND_API_KEY=local LEAD_EMAIL_FROM="LIKIN Web <web@likinagency.com>" \
  *     META_CAPI_ACCESS_TOKEN=token-local-de-prueba-0123456789 npx next start -p 3300
  *   node scripts/qa-meta.mjs /tmp/lk-meta
- * Comprueba: nada antes de decidir; PageView (llegada y navegación interna), Contact (mailto),
- * Lead y Schedule en el píxel y en la API con el MISMO event_id; Lead del servidor con email,
+ * Comprueba: nada antes de decidir; PageView (llegada y navegación interna), ViewContent, Contact
+ * (mailto), AbrirFormulario, PasoContacto, Lead (con la valoración) y Schedule en el píxel y en la API
+ * con el MISMO event_id; Lead del servidor con email,
  * teléfono y nombre solo con hash; un email por envío (doble clic); el paso de contacto se puede
  * completar en móvil; rechazo: el lead llega igual y no sale nada hacia Meta.
  */
@@ -109,6 +110,10 @@ try {
   check("PageView en píxel y API con el mismo event_id", Boolean(pv?.[3]?.eventID) && pvServer?.event_id === pv[3].eventID, `${pv?.[3]?.eventID} / ${pvServer?.event_id}`);
   check("API: IP, navegador, URL, website y fbc desde el fbclid", Boolean(pvServer?.user_data.client_ip_address && pvServer?.user_data.client_user_agent && pvServer?.user_data.fbc?.endsWith(".IwAR0qacapitest01") && pvServer?.action_source === "website" && pvServer?.event_source_url?.includes("/escalar-ecommerce")), JSON.stringify(pvServer?.user_data ?? {}).slice(0, 160));
 
+  const vc = (await fbq()).find((c) => c[1] === "ViewContent");
+  const vcServer = graph(yes.start).find((e) => e.event_name === "ViewContent");
+  check("ViewContent SCALE en /escalar-ecommerce, en píxel y API con el mismo event_id", vc?.[0] === "track" && vc?.[2]?.content_name === "SCALE" && vcServer?.event_id === vc[3].eventID, JSON.stringify(vc?.[2]));
+
   await yes.page.locator("footer").getByRole("link", { name: "Privacidad" }).click();
   await yes.page.waitForURL("**/privacidad");
   await wait(1500);
@@ -134,6 +139,12 @@ try {
   check("un email por el doble clic, con el JSON del lead adjunto", mails.length === 1 && mails[0].body.attachments?.[0]?.filename?.startsWith("lead-lead_"), String(mails.length));
   check("un Lead en el píxel, con el id del lead", leads.length === 1 && /^lead_/.test(leads[0][3]?.eventID ?? ""), JSON.stringify(leads));
   check("un Lead en la API, del servidor, con el mismo event_id", leadServer.length === 1 && leadServer[0].event_id === leads[0]?.[3]?.eventID, leadServer[0]?.event_id);
+  const opened = (await fbq()).filter((c) => c[1] === "AbrirFormulario");
+  const openedServer = graph(before).filter((e) => e.event_name === "AbrirFormulario");
+  check("AbrirFormulario (personalizado) con servicio y botón, también en la API", opened.length === 1 && opened[0][0] === "trackCustom" && opened[0][2].content_name === "SCALE" && /#lead-scale$/.test(opened[0][2].cta) && openedServer[0]?.event_id === opened[0][3].eventID && openedServer[0]?.custom_data?.cta === opened[0][2].cta, JSON.stringify(opened[0]?.[2]));
+  const paso = (await fbq()).filter((c) => c[1] === "PasoContacto");
+  check("un solo PasoContacto (personalizado) al llegar al último paso, también en la API", paso.length === 1 && paso[0][0] === "trackCustom" && graph(before).some((e) => e.event_name === "PasoContacto" && e.event_id === paso[0][3].eventID), String(paso.length));
+  check("Lead con la valoración del formulario en píxel y API", leads[0]?.[2]?.qualification === "HIGH_FIT" && leadServer[0]?.custom_data?.qualification === "HIGH_FIT", `${leads[0]?.[2]?.qualification} / ${leadServer[0]?.custom_data?.qualification}`);
   const ud = leadServer[0]?.user_data ?? {};
   check("Lead: email, teléfono (con 34) y nombre de pila solo con hash", ud.em?.[0] === hex("lucia.qa@lk-meta.example") && ud.ph?.[0] === hex("34600000444") && ud.fn?.[0] === hex("lucía") && Boolean(ud.fbc?.endsWith(".IwAR0qacapitest01")), JSON.stringify(ud).slice(0, 140));
 
@@ -165,6 +176,9 @@ try {
     check(`${path} carga`, (await no.page.locator("h1").innerText()).length > 3);
   }
   await no.ctx.close();
+} catch (e) {
+  failures++;
+  console.log(`✗ la QA se ha detenido: ${e.message.split("\n")[0]}`);
 } finally {
   await browser.close();
   console.log(failures ? `\n${failures} fallo(s)` : "\nTodo correcto");

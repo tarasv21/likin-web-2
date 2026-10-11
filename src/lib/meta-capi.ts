@@ -3,10 +3,10 @@
 // el servidor: viaja en el cuerpo de la petición a Meta (nunca en la URL) y no se escribe en logs.
 // Mismo código en likinagency.com (src/lib/meta-capi.ts allí): mantenerlos en sincronía.
 export const GRAPH_API_VERSION = 'v26.0';
-export const CAPI_EVENTS = ['PageView', 'Lead', 'Contact', 'Schedule'] as const;
+export const CAPI_EVENTS = ['PageView', 'Lead', 'Contact', 'Schedule', 'ViewContent', 'InitiateCheckout', 'AbrirFormulario', 'PasoContacto', 'IrALikinAgency'] as const;
 export type CapiEventName = (typeof CAPI_EVENTS)[number];
 /** Los que el navegador puede pedir por /api/meta-capi. El Lead lo envía el servidor del formulario. */
-export const BROWSER_EVENTS: readonly CapiEventName[] = ['PageView', 'Contact', 'Schedule'];
+export const BROWSER_EVENTS: readonly CapiEventName[] = CAPI_EVENTS.filter((e) => e !== 'Lead');
 const EVENT_ID = /^[A-Za-z0-9_-]{8,100}$/;
 
 export type CapiConfig = { pixelId: string; token: string; testCode?: string };
@@ -180,7 +180,7 @@ export async function handleBrowserEvent(request: Request, deps: BrowserEventDep
   }
   const custom: Record<string, string> = {};
   if (body.custom_data && typeof body.custom_data === 'object') {
-    for (const k of ['content_name', 'content_category'] as const) {
+    for (const k of ['content_name', 'content_category', 'cta'] as const) {
       const v = (body.custom_data as Record<string, unknown>)[k];
       if (typeof v === 'string' && v.length <= 60) custom[k] = v;
     }

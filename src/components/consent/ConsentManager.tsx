@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { CONSENT_EVENT, CONSENT_KEY, CONSENT_OPEN_EVENT, readConsent, saveConsent, stateOf, type ConsentState } from "@/lib/consent";
 import { metaPixel } from "@/lib/meta-pixel";
-import { initConversionTracking, trackEvent } from "@/lib/meta";
+import { initConversionTracking, trackEvent, viewContentFor } from "@/lib/meta";
 import { site } from "@/data/site";
 import { cn } from "@/lib/utils";
 
@@ -41,12 +41,17 @@ function ConsentPanel() {
   const titleId = useId();
 
   // La decisión manda: el píxel solo se carga tras un «Aceptar»; un «Rechazar» borra sus cookies.
-  // Un PageView por página (píxel + API con el mismo event_id), también en la navegación interna.
+  // Un PageView por página (píxel + API con el mismo event_id), también en la navegación interna;
+  // en las páginas de servicio y de casos, además un ViewContent.
   useEffect(() => {
     if (state === "granted") {
       metaPixel.grant(null);
       initConversionTracking();
-      if (lastViewed.current !== pathname && trackEvent("PageView") !== null) lastViewed.current = pathname;
+      if (lastViewed.current !== pathname && trackEvent("PageView") !== null) {
+        lastViewed.current = pathname;
+        const view = viewContentFor(pathname);
+        if (view) trackEvent("ViewContent", view);
+      }
     } else if (state === "denied") metaPixel.revoke();
   }, [state, pathname]);
 

@@ -3,13 +3,16 @@
  * antes, nada de Meta (ni script, ni cookie, ni petición). Mismo código en likinagency.com.
  *
  * Cada evento lleva un `eventID` que también viaja a la API de Conversiones (meta.ts → servidor),
- * para que Meta cuente uno solo. Sin configuración automática de eventos ni coincidencia avanzada
+ * para que Meta cuente uno solo. Los estándar van con `track`; los propios (AbrirFormulario,
+ * PasoContacto, IrALikinAgency), con `trackCustom`. Sin configuración automática de eventos ni coincidencia avanzada
  * en el navegador. Un Lead por id (sessionStorage + memoria): doble clic o reintento no cuentan dos
  * veces. Retirar el consentimiento detiene el píxel y borra `_fbp` y `_fbc` de esta web.
  */
 export const META_PIXEL_SRC = 'https://connect.facebook.net/en_US/fbevents.js';
 export const LEADS_SENT_KEY = 'likin.pixel.leads.v1';
-export const META_EVENTS = ['PageView', 'Lead', 'Contact', 'Schedule'] as const;
+export const META_EVENTS = ['PageView', 'Lead', 'Contact', 'Schedule', 'ViewContent', 'InitiateCheckout', 'AbrirFormulario', 'PasoContacto', 'IrALikinAgency'] as const;
+/** Eventos estándar de Meta; el resto son eventos personalizados. */
+export const STANDARD_EVENTS: readonly string[] = ['PageView', 'Lead', 'Contact', 'Schedule', 'ViewContent', 'InitiateCheckout'];
 export type MetaEventName = (typeof META_EVENTS)[number];
 export type MetaParams = Record<string, string>;
 const MAX_REMEMBERED = 20;
@@ -172,7 +175,7 @@ export function createMetaPixel(pixelId: string | null, getHost: () => PixelHost
         if (sentLeads.has(eventId) || remembered().includes(eventId)) return false;
         remember(eventId);
       }
-      call('track', name, params, { eventID: eventId });
+      call(STANDARD_EVENTS.includes(name) ? 'track' : 'trackCustom', name, params, { eventID: eventId });
       return true;
     },
   };

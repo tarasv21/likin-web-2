@@ -35,7 +35,7 @@ export default function Page() {
         },
         {
           h: "Cómo valoramos tu solicitud",
-          p: ["Con tus respuestas el formulario calcula una estimación del encaje de tu proyecto con nuestros servicios y te muestra el siguiente paso recomendado. Todas las solicitudes nos llegan y las atiende una persona: la estimación sirve para priorizar la respuesta."],
+          p: ["Con tus respuestas el formulario calcula una estimación del encaje de tu proyecto con nuestros servicios y te muestra el siguiente paso recomendado. Todas las solicitudes nos llegan y las atiende una persona: la estimación sirve para priorizar la respuesta. Si aceptas las cookies de medición, esa valoración llega también a Meta con el aviso de tu solicitud, para medir qué anuncios traen solicitudes que encajan."],
         },
         {
           h: "Quién más trata tus datos",
@@ -44,7 +44,7 @@ export default function Page() {
             "Vercel: alojamiento y funcionamiento de la web, incluido el envío del formulario.",
             "Resend: envío del email con tu solicitud a nuestro buzón.",
             "Google (Google Workspace): correo electrónico de LIKIN Agency, donde recibimos tu solicitud.",
-            "Meta Platforms Ireland: solo si aceptas las cookies de medición. Desde tu navegador (píxel) y desde nuestro servidor (API de Conversiones) recibe las páginas que visitas (con la dirección completa, incluidos los parámetros de campaña y el identificador del clic), los clics en nuestro email y en el enlace de reserva, y el aviso de que has enviado una solicitud con el tipo de formulario, con un identificador de cada evento, los identificadores de sus cookies y los datos técnicos de tu conexión y navegador, como la dirección IP. Cuando envías el formulario, también tu email, tu teléfono y tu nombre de pila, cifrados con un hash irreversible (SHA-256) antes de salir de nuestro servidor, para que Meta pueda relacionar la solicitud con tu cuenta. Nunca tus respuestas.",
+            "Meta Platforms Ireland: solo si aceptas las cookies de medición. Desde tu navegador (píxel) y desde nuestro servidor (API de Conversiones) recibe las páginas que visitas (con la dirección completa, incluidos los parámetros de campaña y el identificador del clic), los clics en nuestro email, en el enlace de reserva y en el botón de pago, cuándo abres el formulario (y desde qué botón) y cuándo llegas a su último paso, y el aviso de que has enviado una solicitud con el tipo de formulario y la valoración de encaje que calcula el formulario (por ejemplo, «encaje alto» o «revisión manual»), con un identificador de cada evento, los identificadores de sus cookies y los datos técnicos de tu conexión y navegador, como la dirección IP. Cuando envías el formulario, también tu email, tu teléfono y tu nombre de pila, cifrados con un hash irreversible (SHA-256) antes de salir de nuestro servidor, para que Meta pueda relacionar la solicitud con tu cuenta. Nunca tus respuestas.",
           ],
         },
         { h: "Transferencias internacionales", p: legal.transfers },

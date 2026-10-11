@@ -176,3 +176,67 @@ describe('Lead fbc from the landing touch', () => {
     for (const t of [undefined, null, {}, { fbclid: 'short' }, { fbclid: 'bad value <script>' }, 'IwAR0qacapitest01']) assert.equal(fbcFromTouch(t, now), undefined);
   });
 });
+
+const HOST = 'https://www.likinagency.com';
+
+describe('new events', () => {
+  test('standard events go with track, our own with trackCustom; Purchase still never leaves', () => {
+    const f = fakeHost();
+    const px = createMetaPixel('2270277029972714', () => f.host);
+    px.grant(null);
+    assert.equal(px.track('ViewContent', { content_name: 'SCALE' }, 'evt-view-0001'), true);
+    assert.equal(px.track('AbrirFormulario', { content_name: 'SCALE', cta: '/#hero' }, 'evt-open-0001'), true);
+    assert.equal(px.track('IrALikinAgency', { content_name: 'BUILD' }, 'evt-goto-0001'), true);
+    assert.equal(px.track('Purchase', {}, 'evt-buy-00002'), false);
+    assert.deepEqual(f.calls().slice(3), [
+      ['track', 'ViewContent', { content_name: 'SCALE' }, { eventID: 'evt-view-0001' }],
+      ['trackCustom', 'AbrirFormulario', { content_name: 'SCALE', cta: '/#hero' }, { eventID: 'evt-open-0001' }],
+      ['trackCustom', 'IrALikinAgency', { content_name: 'BUILD' }, { eventID: 'evt-goto-0001' }],
+    ]);
+  });
+  test('/api/meta-capi accepts the new browser events with cta, never Lead', async () => {
+    const sent = [];
+    const deps = { config: CFG, fetch: async (u, i) => { sent.push(JSON.parse(i.body)); return new Response('{"events_received":1}', { status: 200 }); } };
+    const req = (body) => new Request(`${HOST}/api/meta-capi`, { method: 'POST', headers: { host: new URL(HOST).host, origin: HOST, 'content-type': 'application/json', 'x-forwarded-for': '203.0.113.9' }, body: JSON.stringify(body) });
+    for (const name of ['ViewContent', 'InitiateCheckout', 'AbrirFormulario', 'PasoContacto', 'IrALikinAgency']) {
+      assert.equal((await handleBrowserEvent(req({ event_name: name, event_id: `evt-${name}-01`, event_source_url: `${HOST}/`, custom_data: { content_name: 'SCALE', cta: 'hero', qualification: 'HIGH_FIT' }, consent: true }), deps)).status, 204);
+    }
+    assert.deepEqual(sent.map((b) => b.data[0].event_name), ['ViewContent', 'InitiateCheckout', 'AbrirFormulario', 'PasoContacto', 'IrALikinAgency']);
+    assert.deepEqual(sent[2].data[0].custom_data, { content_name: 'SCALE', cta: 'hero' });
+    assert.equal((await handleBrowserEvent(req({ event_name: 'Lead', event_id: 'evt-lead-0101', event_source_url: `${HOST}/`, consent: true }), deps)).status, 400);
+  });
+});
+
+import { createFormEventMapper, metaEventFor, viewContentFor } from '../src/lib/meta.ts';
+import { qualificationOf } from '../src/lib/meta-capi-lead.ts';
+
+describe('likinagency events', () => {
+  test('ViewContent on the service pages and the cases, nowhere else', () => {
+    assert.deepEqual(viewContentFor('/escalar-ecommerce'), { content_name: 'SCALE', content_category: 'likinagency.com' });
+    assert.deepEqual(viewContentFor('/crear-tienda-online/'), { content_name: 'BUILD', content_category: 'likinagency.com' });
+    assert.deepEqual(viewContentFor('/work/bordando-hilos'), { content_name: 'caso/bordando-hilos', content_category: 'likinagency.com' });
+    for (const p of ['/', '/work', '/privacidad', '/work/a/b']) assert.equal(viewContentFor(p), null, p);
+  });
+  test('form events: AbrirFormulario with the button, PasoContacto, Schedule, InitiateCheckout; the rest stays out', () => {
+    assert.deepEqual(metaEventFor('qualification_form_opened', { service: 'SCALE', source: '/escalar-ecommerce#hero' }), { name: 'AbrirFormulario', data: { content_name: 'SCALE', content_category: 'likinagency.com', cta: '/escalar-ecommerce#hero' } });
+    assert.deepEqual(metaEventFor('qualification_contact_reached', { service: 'BUILD', qualification: 'READY' }), { name: 'PasoContacto', data: { content_name: 'BUILD', content_category: 'likinagency.com' } });
+    assert.deepEqual(metaEventFor('book_call_clicked', { service: 'SCALE' }), { name: 'Schedule', data: { content_name: 'SCALE', content_category: 'likinagency.com' } });
+    assert.deepEqual(metaEventFor('build_checkout_clicked', { service: 'BUILD' }), { name: 'InitiateCheckout', data: { content_name: 'BUILD', content_category: 'likinagency.com' } });
+    for (const e of ['qualification_started', 'qualification_step_completed', 'qualification_submitted', 'service_selected']) assert.equal(metaEventFor(e, { service: 'SCALE' }), null, e);
+  });
+  test('one PasoContacto per opened form, even if the last step is reached twice', () => {
+    const map = createFormEventMapper();
+    const names = [
+      ['qualification_form_opened', { service: 'SCALE' }],
+      ['qualification_contact_reached', { service: 'SCALE' }],
+      ['qualification_contact_reached', { service: 'SCALE' }],
+      ['qualification_form_opened', { service: 'BUILD' }],
+      ['qualification_contact_reached', { service: 'BUILD' }],
+    ].map(([e, p]) => map(e, p)?.name ?? null);
+    assert.deepEqual(names, ['AbrirFormulario', 'PasoContacto', null, 'AbrirFormulario', 'PasoContacto']);
+  });
+  test('the server Lead carries the qualification only when it is a known value', () => {
+    assert.deepEqual(qualificationOf({ qualification: 'HIGH_FIT' }), { qualification: 'HIGH_FIT' });
+    for (const q of [undefined, '', 'SUPER', 'high_fit', 3]) assert.deepEqual(qualificationOf({ qualification: q }), {});
+  });
+});

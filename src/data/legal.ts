@@ -39,7 +39,7 @@ export const legal = {
   /** Fecha de la última actualización de los textos. */
   updated: "11 de octubre de 2026",
   /** Versión de la política de privacidad que se guarda con cada solicitud (sube con cada cambio de los textos). */
-  policyVersion: "likinagency-privacidad@2026-10-11",
+  policyVersion: "likinagency-privacidad@2026-10-11.2",
 };
 
 
