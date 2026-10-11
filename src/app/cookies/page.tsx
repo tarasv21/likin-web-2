@@ -9,7 +9,15 @@ export default function Page() {
     <LegalPage
       title="Política de cookies"
       sections={[
-        { h: "Quién las usa", p: [`Esta web es de ${legal.holder} (${legal.tradeName}). Solo usa cookies de terceros si las aceptas: las de Meta, para medir los anuncios.`] },
+        { h: "Quién las usa", p: [`Esta web es de ${legal.holder} (${legal.tradeName}). Solo usa cookies de terceros si las aceptas: las de Google Analytics, para saber cómo se usa la web, y las de Meta, para medir los anuncios.`] },
+        {
+          h: "Cookies de analítica de Google (solo si las aceptas)",
+          p: [
+            "Si aceptas en el aviso de cookies, cargamos Google Analytics 4, de Google, para saber cuántas personas visitan la web, de dónde llegan y cómo la usan. Google recibe las páginas que visitas (con su dirección completa, incluidos los parámetros de campaña), de dónde llegas, cómo navegas (por ejemplo, cuánto te desplazas, los clics en enlaces a otras webs y el uso de los formularios, nunca lo que escribes), datos técnicos de tu navegador y dispositivo y una ubicación aproximada. Sin las funciones publicitarias de Google: no se usa para anuncios ni para personalizar nada.",
+            "Instala en likinagency.com las cookies _ga (distingue tu navegador, 2 años) y _ga_8261QVV57Y (guarda el estado de la visita, 2 años).",
+            "Si no aceptas, no se carga nada de Google Analytics y la web funciona igual.",
+          ],
+        },
         {
           h: "Cookies de medición de Meta (solo si las aceptas)",
           p: [
@@ -29,7 +37,7 @@ export default function Page() {
         },
         {
           h: "Cómo cambiar o retirar tu decisión",
-          p: ["Con «Configurar cookies», en el pie de cualquier página. Si las retiras, el píxel y la API de Conversiones dejan de enviar datos y borramos sus cookies de esta web. También puedes borrar las cookies y el almacenamiento del sitio desde tu navegador."],
+          p: ["Con «Configurar cookies», en el pie de cualquier página. Si las retiras, Google Analytics, el píxel y la API de Conversiones dejan de enviar datos y borramos sus cookies de esta web. También puedes borrar las cookies y el almacenamiento del sitio desde tu navegador."],
         },
       ]}
     />

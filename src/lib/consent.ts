@@ -1,14 +1,15 @@
 /**
- * The visitor's cookie decision (browser only). One optional purpose today: measuring which Meta
- * ads bring requests (the Meta Pixel, src/lib/meta-pixel.ts). Nothing optional runs until the
- * visitor accepts; rejecting is as easy as accepting and the site works the same.
+ * The visitor's cookie decision (browser only). One optional purpose: measurement — Google
+ * Analytics (src/lib/ga.ts) and which Meta ads bring requests (src/lib/meta-pixel.ts). Nothing
+ * optional runs until the visitor accepts; rejecting is as easy as accepting and the site works the
+ * same. Version 2 (Google Analytics added): a version 1 decision is asked again.
  *
- * Kept in localStorage as {"v":1,"ads":true|false,"at":"<ISO>"} under `likin.consent.v1` (no
+ * Kept in localStorage as {"v":2,"ads":true|false,"at":"<ISO>"} under `likin.consent.v1` (no
  * cookie of our own). The decision is asked again after 12 months or when the version changes.
  * If storage is blocked, the decision lasts for this page view only.
  */
 export const CONSENT_KEY = "likin.consent.v1";
-export const CONSENT_VERSION = 1;
+export const CONSENT_VERSION = 2;
 export const CONSENT_MAX_AGE_MS = 365 * 24 * 60 * 60 * 1000;
 /** Fired on window after every decision (detail: the Consent). */
 export const CONSENT_EVENT = "likin:consent";

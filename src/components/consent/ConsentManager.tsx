@@ -7,6 +7,7 @@ import { CONSENT_EVENT, CONSENT_KEY, CONSENT_OPEN_EVENT, readConsent, saveConsen
 import { metaPixel } from "@/lib/meta-pixel";
 import { initConversionTracking, trackEvent, viewContentFor } from "@/lib/meta";
 import { site } from "@/data/site";
+import { ga } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 
 function subscribe(onChange: () => void) {
@@ -24,17 +25,20 @@ const snapshot = (): ConsentState => stateOf(readConsent());
 // El servidor nunca sabe la decisión: no pinta nada (sin parpadeo para quien ya decidió).
 const serverSnapshot = (): ConsentState | "unknown" => "unknown";
 
+/** La decisión de cookies de este navegador ("unknown" en el servidor y al hidratar). */
+export const useConsentState = () => useSyncExternalStore(subscribe, snapshot, serverSnapshot);
+
 /**
- * Aviso de cookies + Meta (píxel y API de Conversiones). No pinta nada si no hay
- * NEXT_PUBLIC_META_PIXEL_ID: entonces la web no tiene cookies opcionales ni necesita aviso.
+ * Aviso de cookies: Google Analytics (Analytics.tsx) y Meta (píxel y API de Conversiones), las dos
+ * con la misma decisión. Sin píxel ni Google Analytics no habría cookies opcionales ni aviso.
  */
 export function ConsentManager() {
-  if (!metaPixel.configured) return null;
+  if (!metaPixel.configured && !ga.measurementId) return null;
   return <ConsentPanel />;
 }
 
 function ConsentPanel() {
-  const state = useSyncExternalStore(subscribe, snapshot, serverSnapshot);
+  const state = useConsentState();
   const [reopened, setReopened] = useState(false);
   const pathname = usePathname();
   const lastViewed = useRef<string | null>(null);
@@ -76,7 +80,7 @@ function ConsentPanel() {
           Cookies
         </h2>
         <p className="mt-3 text-small text-cloud/90">
-          Usamos cookies de Meta (terceros) para medir qué anuncios nos traen solicitudes. Solo se activan si aceptas; si las rechazas, la web funciona igual.{" "}
+          Usamos cookies de Google Analytics y de Meta (terceros) para saber cómo se usa la web y qué anuncios nos traen solicitudes. Solo se activan si aceptas; si las rechazas, la web funciona igual.{" "}
           <Link href={site.routes.cookies} className="text-cloud underline underline-offset-2 hover:text-teal">
             Política de cookies
           </Link>

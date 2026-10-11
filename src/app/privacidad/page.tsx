@@ -26,12 +26,12 @@ export default function Page() {
           p: [
             "Para valorar si podemos ayudarte, responderte y, si encaja, preparar una propuesta y hacer el seguimiento comercial de tu solicitud. También para saber qué canales y campañas nos traen solicitudes.",
             "Si marcas la casilla de novedades, para enviarte contenidos de LIKIN Agency.",
-            "Si aceptas las cookies de medición, para medir con Meta qué anuncios nos traen visitas y solicitudes (lo explicamos en la política de cookies).",
+            "Si aceptas las cookies de medición, para saber cómo se usa la web (Google Analytics) y medir con Meta qué anuncios nos traen visitas y solicitudes (lo explicamos en la política de cookies).",
           ],
         },
         {
           h: "Base jurídica",
-          p: ["Tu consentimiento: al marcar la casilla del formulario, para tratar tus datos y responder a tu solicitud; con la casilla de novedades, que es opcional, para enviarte contenidos; y en el aviso de cookies, para la medición con Meta. Puedes retirar cualquiera de ellos cuando quieras, sin que afecte a lo hecho antes."],
+          p: ["Tu consentimiento: al marcar la casilla del formulario, para tratar tus datos y responder a tu solicitud; con la casilla de novedades, que es opcional, para enviarte contenidos; y en el aviso de cookies, para la medición con Google Analytics y Meta. Puedes retirar cualquiera de ellos cuando quieras, sin que afecte a lo hecho antes."],
         },
         {
           h: "Cómo valoramos tu solicitud",
@@ -43,7 +43,7 @@ export default function Page() {
             "No vendemos ni cedemos tus datos. Para funcionar usamos estos proveedores, que los tratan por nuestra cuenta:",
             "Vercel: alojamiento y funcionamiento de la web, incluido el envío del formulario.",
             "Resend: envío del email con tu solicitud a nuestro buzón.",
-            "Google (Google Workspace): correo electrónico de LIKIN Agency, donde recibimos tu solicitud.",
+            "Google: correo electrónico de LIKIN Agency (Google Workspace), donde recibimos tu solicitud, y, solo si aceptas las cookies de medición, Google Analytics, que recibe las páginas que visitas, de dónde llegas y cómo navegas, con el identificador de su cookie y datos técnicos de tu navegador y dispositivo. A Google Analytics no le enviamos tu nombre, tu email, tu teléfono ni tus respuestas.",
             "Meta Platforms Ireland: solo si aceptas las cookies de medición. Desde tu navegador (píxel) y desde nuestro servidor (API de Conversiones) recibe las páginas que visitas (con la dirección completa, incluidos los parámetros de campaña y el identificador del clic), los clics en nuestro email, en el enlace de reserva y en el botón de pago, cuándo abres el formulario (y desde qué botón) y cuándo llegas a su último paso, y el aviso de que has enviado una solicitud con el tipo de formulario y la valoración de encaje que calcula el formulario (por ejemplo, «encaje alto» o «revisión manual»), con un identificador de cada evento, los identificadores de sus cookies y los datos técnicos de tu conexión y navegador, como la dirección IP. Cuando envías el formulario, también tu email, tu teléfono y tu nombre de pila, cifrados con un hash irreversible (SHA-256) antes de salir de nuestro servidor, para que Meta pueda relacionar la solicitud con tu cuenta. Nunca tus respuestas.",
           ],
         },
