@@ -11,8 +11,7 @@
 import { createHash } from "node:crypto";
 import { findQuestion } from "@/lib/qualify/questions";
 import type { Lead } from "@/lib/qualify/types";
-/** The CRM's answer when there is a CRM (not in this version: always null). Same shape as the relay's. */
-export type RelayResult = { status: "processed" | "duplicate" | "received" | "rejected" | "retryable_failure" | "unreachable"; pending?: string; code?: string; attempts: number };
+import type { RelayResult } from "./relay";
 
 export type EmailConfig = { apiKey: string; from: string; to: string };
 export type EmailAttachment = { filename: string; content: string };

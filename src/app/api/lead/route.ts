@@ -8,10 +8,12 @@ import type { Lead } from "@/lib/qualify/types";
 /**
  * Lead intake for the qualification form.
  *
- * Validates the payload, then delivers it (src/lib/crm/deliver.ts): by e-mail through Resend
- * (RESEND_API_KEY + LEAD_EMAIL_FROM), the record of the lead until the CRM, and to the optional
- * legacy webhook (LEAD_WEBHOOK_URL). The response reports `stored` honestly: false means nothing
- * durable has the lead, and the UI says so instead of claiming success. When stored and the
+ * Validates the payload, then delivers it (src/lib/crm/deliver.ts): to LIKIN CRM through a signed
+ * server-to-server relay when CRM_INGEST_URL / CRM_INGEST_KEY_ID / CRM_INGEST_SECRET are set, by
+ * e-mail through Resend (RESEND_API_KEY + LEAD_EMAIL_FROM) when the CRM did not confirm the lead, or
+ * for every lead with LEAD_EMAIL_ALWAYS=1 or without the CRM, and to the optional legacy webhook
+ * (LEAD_WEBHOOK_URL) only when the CRM does not have it. The response reports `stored` honestly:
+ * false means nothing durable has the lead, and the UI says so instead of claiming success. When stored and the
  * visitor accepted cookies, the Lead goes to Meta's Conversions API (src/lib/meta-capi-lead.ts).
  * Secrets stay here: this module never runs in the browser.
  */
@@ -101,6 +103,9 @@ export async function POST(req: Request) {
     event_id: delivery.eventId,
     service: clean.service,
     channel: delivery.channel,
+    crm: delivery.crm?.status ?? "not_configured",
+    crm_code: delivery.crm?.code,
+    crm_attempts: delivery.crm?.attempts,
     emailed: delivery.emailed,
     webhook: delivery.webhook,
   });

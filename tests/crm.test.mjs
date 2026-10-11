@@ -1,17 +1,23 @@
 /**
- * Lead reception of likinagency.com WITHOUT the CRM: the deterministic lead-input@1 payload, the
- * e-mail through Resend (the record of the lead), the delivery decision, the landing touch and the
- * rate limiter. Fictional data only; no network (fetch is faked).
+ * The CRM relay of likinagency.com: HMAC (golden vector shared with LIKIN CRM), retries and honest
+ * statuses, the deterministic lead-input@1 payload, the backup e-mail, the delivery decision,
+ * the landing touch and the rate limiter. Fictional data only; no network (fetch is faked).
  */
 import { describe, test } from "node:test";
 import assert from "node:assert/strict";
+import { createHmac } from "node:crypto";
+import { crmConfigFromEnv, isInCrm, relayToCrm, signBody } from "../src/lib/crm/relay.ts";
 import { boundedAnswers, crossSiteTouches, toLeadInput } from "../src/lib/crm/canonical.ts";
 import { crmStatusLine, emailConfigFromEnv, fallbackEmail, sendFallbackEmail } from "../src/lib/crm/fallback-email.ts";
 import { deliverLead, legacyWebhookPayload } from "../src/lib/crm/deliver.ts";
 import { nextLanding, touchFrom } from "../src/lib/attribution/landing.ts";
 import { createLimiter } from "../src/lib/crm/rate-limit.ts";
 
+const SECRET = "test-secret-not-a-real-key-0123456789abcdef";
+const CFG = { url: "https://crm.example/api/ingest/web", keyId: "lk-test-0001", secret: SECRET };
+const ENV = { CRM_INGEST_URL: CFG.url, CRM_INGEST_KEY_ID: CFG.keyId, CRM_INGEST_SECRET: SECRET };
 const EMAIL_ENV = { RESEND_API_KEY: "re_test_not_real", LEAD_EMAIL_FROM: "Web <web@likin.example>" };
+const fast = { sleep: async () => {}, budgetMs: 2000, attemptTimeoutMs: 500 };
 
 const json = (status, body, headers = {}) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json", ...headers } });
 
@@ -56,6 +62,90 @@ const lead = (over = {}) => ({
   ...over,
 });
 
+describe("HMAC signature", () => {
+  test("golden vector shared with LIKIN CRM (src/server/ingest/hmac.ts)", () => {
+    assert.equal(signBody("golden-vector-secret", "1790000000", JSON.stringify({ hello: "likin" })), "v1=5066748e9a0848bd342b7c584174ca66a460c2e03e04bfc6613538e8fd6aef21");
+  });
+  test("config: all three variables, https (or localhost), a key id and a long secret", () => {
+    assert.deepEqual(crmConfigFromEnv(ENV), CFG);
+    assert.equal(crmConfigFromEnv({ ...ENV, CRM_INGEST_SECRET: undefined }), null);
+    assert.equal(crmConfigFromEnv({ ...ENV, CRM_INGEST_URL: "http://crm.example/api/ingest/web" }), null);
+    assert.ok(crmConfigFromEnv({ ...ENV, CRM_INGEST_URL: "http://localhost:3000/api/ingest/web" }));
+    assert.equal(crmConfigFromEnv({ ...ENV, CRM_INGEST_KEY_ID: "Bad Id" }), null);
+    assert.equal(crmConfigFromEnv({ ...ENV, CRM_INGEST_SECRET: "short" }), null);
+  });
+});
+
+describe("relay to the CRM", () => {
+  test("processed: signed headers over the exact body; nothing secret in the request but the signature", async () => {
+    const f = fakeFetch({ [CFG.url]: [json(200, { status: "processed", eventId: "x", receipt: "r1" })] });
+    const r = await relayToCrm({ a: 1 }, CFG, { fetch: f, ...fast });
+    assert.deepEqual(r, { status: "processed", attempts: 1, httpStatus: 200, receipt: "r1" });
+    const { headers, body } = f.calls[0];
+    assert.equal(headers["x-likin-key-id"], CFG.keyId);
+    const expected = "v1=" + createHmac("sha256", SECRET).update(`${headers["x-likin-timestamp"]}.${body}`).digest("hex");
+    assert.equal(headers["x-likin-signature"], expected);
+    assert.equal(body, JSON.stringify({ a: 1 }));
+    assert.ok(!JSON.stringify(f.calls[0].init).includes(SECRET));
+  });
+  test("503 then processed: retried with the SAME body (idempotent in the CRM)", async () => {
+    const f = fakeFetch({ [CFG.url]: [json(503, { status: "retryable_failure", code: "store_unavailable" }), json(200, { status: "duplicate", receipt: "r1" })] });
+    const r = await relayToCrm({ a: 1 }, CFG, { fetch: f, ...fast });
+    assert.equal(r.status, "duplicate");
+    assert.equal(r.attempts, 2);
+    assert.equal(f.calls[0].body, f.calls[1].body);
+  });
+  test("response lost after the CRM processed the lead: the retry gets duplicate (stored once, confirmed)", async () => {
+    const seen = new Set();
+    let processed = 0;
+    const crm = (init) => {
+      if (seen.has(init.body)) return json(200, { status: "duplicate", receipt: "r-lost" });
+      seen.add(init.body);
+      processed += 1;
+      throw new TypeError("socket hang up"); // processed in the CRM, answer lost on the way back
+    };
+    const f = fakeFetch({ [CFG.url]: [crm, crm] });
+    const r = await relayToCrm({ a: 1 }, CFG, { fetch: f, ...fast });
+    assert.equal(r.status, "duplicate");
+    assert.equal(r.attempts, 2);
+    assert.equal(processed, 1);
+    assert.ok(isInCrm(r.status));
+  });
+  test("4xx is never retried", async () => {
+    const f = fakeFetch({ [CFG.url]: [json(422, { status: "rejected", code: "invalid_input" })] });
+    const r = await relayToCrm({ a: 1 }, CFG, { fetch: f, ...fast });
+    assert.deepEqual(r, { status: "rejected", attempts: 1, httpStatus: 422, code: "invalid_input" });
+    assert.equal(f.calls.length, 1);
+  });
+  test("network errors three times → unreachable", async () => {
+    const f = fakeFetch({ [CFG.url]: [new TypeError("fetch failed"), new TypeError("fetch failed"), new TypeError("fetch failed")] });
+    const r = await relayToCrm({ a: 1 }, CFG, { fetch: f, ...fast });
+    assert.deepEqual(r, { status: "unreachable", attempts: 3, code: "network" });
+  });
+  test("202 received is durable in the CRM but not a lead yet", async () => {
+    const f = fakeFetch({ [CFG.url]: [json(202, { status: "received", pending: "retry", receipt: "r2" })] });
+    const r = await relayToCrm({ a: 1 }, CFG, { fetch: f, ...fast });
+    assert.equal(r.status, "received");
+    assert.equal(r.pending, "retry");
+    assert.ok(isInCrm(r.status));
+  });
+  test("429 with a Retry-After beyond the budget stops at once; a redirect is a misconfiguration", async () => {
+    const r1 = await relayToCrm({ a: 1 }, CFG, { fetch: fakeFetch({ [CFG.url]: [json(429, { status: "retryable_failure", code: "rate_limited" }, { "retry-after": "60" })] }), ...fast });
+    assert.deepEqual(r1, { status: "retryable_failure", attempts: 1, httpStatus: 429, code: "rate_limited" });
+    const r2 = await relayToCrm({ a: 1 }, CFG, { fetch: fakeFetch({ [CFG.url]: [new Response(null, { status: 302, headers: { location: "/login" } })] }), ...fast });
+    assert.equal(r2.status, "rejected");
+    assert.equal(r2.code, "redirect");
+  });
+  test("a slow CRM times out per attempt and the whole relay stays inside its budget", async () => {
+    const hang = (init) => new Promise((_, reject) => init.signal.addEventListener("abort", () => reject(init.signal.reason)));
+    const started = Date.now();
+    const r = await relayToCrm({ a: 1 }, CFG, { fetch: fakeFetch({ [CFG.url]: hang }), sleep: async () => {}, budgetMs: 900, attemptTimeoutMs: 300 });
+    assert.equal(r.status, "unreachable");
+    assert.equal(r.code, "timeout");
+    assert.ok(Date.now() - started < 1500);
+  });
+});
+
 describe("lead-input@1 payload", () => {
   test("deterministic: the same pending lead always gives the same bytes (no clock, no randomness)", () => {
     const opts = { fallbackEventId: "lead_fallback_1", fallbackSubmittedAt: "2026-10-09T10:00:05.000Z" };
@@ -90,10 +180,17 @@ describe("lead-input@1 payload", () => {
   });
 });
 
-describe("lead e-mail", () => {
-  test("without the CRM the e-mail says it IS the record of the lead", () => {
+describe("backup e-mail", () => {
+  test("never claims the CRM has the lead when it does not", () => {
+    const down = fallbackEmail(lead(), { status: "unreachable", attempts: 3, code: "timeout" }, "lead_1");
+    assert.match(down.subject, /NO registrado en el CRM/);
+    assert.match(down.text, /NO REGISTRADO \(unreachable · timeout, 3 intentos\)/);
+    assert.equal(down.replyTo, "ana@marca.example");
+    const pending = fallbackEmail(lead(), { status: "received", attempts: 1, pending: "retry" }, "lead_1");
+    assert.match(pending.subject, /pendiente en el CRM/);
+    assert.match(pending.text, /PENDIENTE de procesar/);
     assert.match(crmStatusLine(null), /CRM todavía no conectado: este email ES el registro del lead/);
-    assert.match(fallbackEmail(lead(), null, "lead_1").text, /utm_source \/ medium \/ campaign: facebook \/ paid_social \/ SCALE_COLD/);
+    assert.match(down.text, /utm_source \/ medium \/ campaign: facebook \/ paid_social \/ SCALE_COLD/);
   });
   test("without the CRM (ads before the CRM): the e-mail is the record, readable, with the exact payload attached", () => {
     const input = toLeadInput(lead({ touch: { occurred_at: "2026-10-09T09:00:00.000Z", landing_path: "/escalar-ecommerce", utm_source: "facebook", utm_campaign: "SCALE_COLD", fbclid: "fb.secret.value" } }), { fallbackEventId: "lead_fb", fallbackSubmittedAt: "2026-10-09T10:00:00.000Z" });
@@ -137,48 +234,66 @@ describe("lead e-mail", () => {
 });
 
 describe("delivery decision (what the visitor is told)", () => {
-  const deps = (env, fetch) => ({ env, fetch, fallbackEventId: "lead_fb", fallbackSubmittedAt: "2026-10-09T10:00:05.000Z", webhookPayload: { lead_id: "x" } });
+  const deps = (env, fetch) => ({ env, fetch, relay: fast, fallbackEventId: "lead_fb", fallbackSubmittedAt: "2026-10-09T10:00:05.000Z", webhookPayload: { lead_id: "x" } });
   const RESEND = "https://api.resend.com/emails";
-  const HOOK = "https://hooks.example/lead";
 
-  test("e-mail configured: EVERY lead is e-mailed with its payload (the record until the CRM)", async () => {
+  test("CRM processed → stored in the CRM, no e-mail", async () => {
+    const f = fakeFetch({ [CFG.url]: [json(200, { status: "processed", receipt: "r" })], [RESEND]: [json(200, {})] });
+    const d = await deliverLead(lead(), deps({ ...ENV, ...EMAIL_ENV }, f));
+    assert.deepEqual({ stored: d.stored, channel: d.channel, emailed: d.emailed }, { stored: true, channel: "crm", emailed: null });
+    assert.equal(f.calls.filter((c) => c.url === RESEND).length, 0);
+  });
+  test("LEAD_EMAIL_ALWAYS=1: with the CRM confirming the lead, one notice e-mail still goes out and says it is registered", async () => {
+    const f = fakeFetch({ [CFG.url]: [json(200, { status: "processed" })], [RESEND]: [json(200, {})] });
+    const d = await deliverLead(lead(), deps({ ...ENV, ...EMAIL_ENV, LEAD_EMAIL_ALWAYS: "1" }, f));
+    assert.deepEqual({ channel: d.channel, emailed: d.emailed, stored: d.stored }, { channel: "crm", emailed: true, stored: true });
+    const mail = JSON.parse(f.calls.find((c) => c.url === RESEND).body);
+    assert.match(mail.text, /Estado en el CRM: registrado/);
+    const off = fakeFetch({ [CFG.url]: [json(200, { status: "processed" })] });
+    assert.equal((await deliverLead(lead(), deps({ ...ENV, ...EMAIL_ENV }, off))).emailed, null, "without the flag the CRM era sends no e-mail");
+  });
+  test("CRM down → the backup e-mail keeps the lead, and says it is NOT in the CRM", async () => {
+    const f = fakeFetch({ [CFG.url]: [new TypeError("x"), new TypeError("x"), new TypeError("x")], [RESEND]: [json(200, {})] });
+    const d = await deliverLead(lead(), deps({ ...ENV, ...EMAIL_ENV }, f));
+    assert.deepEqual({ stored: d.stored, channel: d.channel, emailed: d.emailed, crm: d.crm.status }, { stored: true, channel: "email", emailed: true, crm: "unreachable" });
+    const mail = JSON.parse(f.calls.find((c) => c.url === RESEND).body);
+    assert.match(mail.subject, /NO registrado en el CRM/);
+    assert.ok(!mail.text.includes(SECRET));
+  });
+  test("no CRM yet, e-mail configured: EVERY lead is e-mailed with its payload (the record until the CRM)", async () => {
     const f = fakeFetch({ [RESEND]: [json(200, { id: "e1" })] });
     const d = await deliverLead(lead(), deps({ ...EMAIL_ENV }, f));
-    assert.deepEqual({ stored: d.stored, channel: d.channel, emailed: d.emailed, webhook: d.webhook, configured: d.configured }, { stored: true, channel: "email", emailed: true, webhook: null, configured: true });
+    assert.deepEqual({ stored: d.stored, channel: d.channel, emailed: d.emailed, crm: d.crm, configured: d.configured }, { stored: true, channel: "email", emailed: true, crm: null, configured: true });
     const sent = JSON.parse(f.calls[0].body);
     assert.match(sent.subject, /^\[Lead SCALE · HIGH_FIT 82\/100\] Marca Ejemplo$/);
-    assert.match(sent.text, /este email ES el registro del lead/);
     const attached = JSON.parse(Buffer.from(sent.attachments[0].content, "base64").toString("utf8"));
     assert.equal(attached.sourceEventId, d.eventId);
     assert.equal(attached.schema, "lead-input@1");
     assert.ok(f.calls[0].headers["Idempotency-Key"].startsWith(`lead-email:${d.eventId}:`));
   });
-  test("e-mail down and no webhook → nothing stored: the route answers 502 and the person can retry", async () => {
-    const f = fakeFetch({ [RESEND]: [json(503, {}), json(503, {})] });
-    const d = await deliverLead(lead(), deps({ ...EMAIL_ENV }, f));
-    assert.deepEqual({ stored: d.stored, channel: d.channel, emailed: d.emailed, configured: d.configured }, { stored: false, channel: "none", emailed: false, configured: true });
+  test("CRM down and no backup → nothing stored: the route answers 502 and the person can retry", async () => {
+    const f = fakeFetch({ [CFG.url]: [json(500, {}), json(500, {}), json(500, {})] });
+    const d = await deliverLead(lead(), deps({ ...ENV }, f));
+    assert.deepEqual({ stored: d.stored, channel: d.channel, configured: d.configured }, { stored: false, channel: "none", configured: true });
   });
-  test("nothing configured → the historical stored:false, and no request leaves the server", async () => {
-    const f = fakeFetch({});
-    const none = await deliverLead(lead(), deps({}, f));
-    assert.deepEqual({ stored: none.stored, channel: none.channel, configured: none.configured }, { stored: false, channel: "none", configured: false });
-    assert.equal(f.calls.length, 0);
+  test("CRM received (pending in the tray) → durable, plus an e-mail so nothing waits silently", async () => {
+    const f = fakeFetch({ [CFG.url]: [json(202, { status: "received", pending: "review" })], [RESEND]: [json(200, {})] });
+    const d = await deliverLead(lead(), deps({ ...ENV, ...EMAIL_ENV }, f));
+    assert.deepEqual({ stored: d.stored, channel: d.channel, emailed: d.emailed }, { stored: true, channel: "crm_pending", emailed: true });
   });
-  test("the legacy webhook receives every lead, exactly as before", async () => {
-    const f = fakeFetch({ [HOOK]: [json(200, {})] });
-    const d = await deliverLead(lead(), deps({ LEAD_WEBHOOK_URL: HOOK }, f));
+  test("CRM rejects (bad key) → backup e-mail; nothing configured → the historical stored:false", async () => {
+    const f = fakeFetch({ [CFG.url]: [json(401, { status: "rejected", code: "unauthorized" })], [RESEND]: [json(200, {})] });
+    const d = await deliverLead(lead(), deps({ ...ENV, ...EMAIL_ENV }, f));
+    assert.equal(d.channel, "email");
+    assert.equal(d.crm.code, "unauthorized");
+    const none = await deliverLead(lead(), deps({}, fakeFetch({})));
+    assert.deepEqual({ stored: none.stored, configured: none.configured }, { stored: false, configured: false });
+  });
+  test("without the CRM the legacy webhook receives every lead, exactly as before", async () => {
+    const f = fakeFetch({ "https://hooks.example/lead": [json(200, {})] });
+    const d = await deliverLead(lead(), deps({ LEAD_WEBHOOK_URL: "https://hooks.example/lead" }, f));
     assert.deepEqual({ stored: d.stored, channel: d.channel, webhook: d.webhook }, { stored: true, channel: "webhook", webhook: true });
     assert.deepEqual(JSON.parse(f.calls[0].body), { lead_id: "x" });
-  });
-  test("webhook and e-mail together: both get the lead; either one is enough to store it", async () => {
-    const both = fakeFetch({ [HOOK]: [json(200, {})], [RESEND]: [json(200, {})] });
-    const d = await deliverLead(lead(), deps({ ...EMAIL_ENV, LEAD_WEBHOOK_URL: HOOK }, both));
-    assert.deepEqual({ stored: d.stored, channel: d.channel, emailed: d.emailed, webhook: d.webhook }, { stored: true, channel: "email", emailed: true, webhook: true });
-    const hookDown = fakeFetch({ [HOOK]: [json(500, {})], [RESEND]: [json(200, {})] });
-    assert.equal((await deliverLead(lead(), deps({ ...EMAIL_ENV, LEAD_WEBHOOK_URL: HOOK }, hookDown))).stored, true);
-    const mailDown = fakeFetch({ [HOOK]: [json(200, {})], [RESEND]: [json(503, {}), json(503, {})] });
-    const m = await deliverLead(lead(), deps({ ...EMAIL_ENV, LEAD_WEBHOOK_URL: HOOK }, mailDown));
-    assert.deepEqual({ stored: m.stored, channel: m.channel }, { stored: true, channel: "webhook" });
   });
   test("the legacy webhook payload keeps the pre-CRM fields: the landing touch and its click ids never reach it", () => {
     const clean = { ...lead(), received_at: "2026-10-09T10:00:06.000Z", user_agent: "test" };
@@ -190,6 +305,21 @@ describe("delivery decision (what the visitor is told)", () => {
     assert.deepEqual(sent, rest);
     assert.ok(clean.touch, "the original lead is not modified");
   });
+  test("with the CRM the webhook is a backup: never when the CRM has the lead (no duplicates), yes when it does not", async () => {
+    const HOOK = "https://hooks.example/lead";
+    const env = { ...ENV, ...EMAIL_ENV, LEAD_WEBHOOK_URL: HOOK };
+    const hooked = (f) => f.calls.filter((c) => c.url === HOOK).length;
+    for (const answer of [json(200, { status: "processed" }), json(200, { status: "duplicate" }), json(202, { status: "received", pending: "retry" })]) {
+      const f = fakeFetch({ [CFG.url]: [answer], [HOOK]: [json(200, {})], [RESEND]: [json(200, {})] });
+      const d = await deliverLead(lead(), deps(env, f));
+      assert.equal(hooked(f), 0);
+      assert.equal(d.webhook, null);
+    }
+    const down = fakeFetch({ [CFG.url]: [new TypeError("x"), new TypeError("x"), new TypeError("x")], [HOOK]: [json(200, {})], [RESEND]: [json(200, {})] });
+    const d = await deliverLead(lead(), deps(env, down));
+    assert.deepEqual({ webhook: d.webhook, emailed: d.emailed, channel: d.channel, stored: d.stored }, { webhook: true, emailed: true, channel: "webhook", stored: true });
+    assert.equal(hooked(down), 1);
+  });
   test("a webhook value that is not an http(s) URL (e.g. \"off\") disables it", async () => {
     for (const v of ["off", "", "  ", "ftp://x.example/hook", "javascript:alert(1)"]) {
       const f = fakeFetch({});
@@ -197,10 +327,12 @@ describe("delivery decision (what the visitor is told)", () => {
       assert.deepEqual({ webhook: d.webhook, configured: d.configured, calls: f.calls.length }, { webhook: null, configured: false, calls: 0 });
     }
   });
-  test("the same lead delivered twice sends the same e-mail key (Resend keeps one)", async () => {
-    const f = fakeFetch({ [RESEND]: () => json(200, {}) });
-    for (let i = 0; i < 2; i++) await deliverLead(lead(), deps({ ...EMAIL_ENV }, f));
-    assert.equal(new Set(f.calls.map((c) => c.headers["Idempotency-Key"])).size, 1);
+  test("five deliveries of the same pending lead send five IDENTICAL bodies (the CRM keeps one)", async () => {
+    const f = fakeFetch({ "*": () => json(200, { status: "duplicate" }) });
+    for (let i = 0; i < 5; i++) await deliverLead(lead(), deps({ ...ENV }, f));
+    const bodies = new Set(f.calls.map((c) => c.body));
+    assert.equal(f.calls.length, 5);
+    assert.equal(bodies.size, 1);
   });
 });
 
@@ -219,6 +351,23 @@ describe("landing touch and rate limit", () => {
     assert.equal(limited("ip", 10), true);
     assert.equal(limited("other", 10), false);
     assert.equal(limited("ip", 5000), false);
+  });
+});
+
+describe("protected CRM preview (Protection Bypass for Automation)", () => {
+  const BYPASS = "bypassForTests0123456789abcdefAB";
+  test("the bypass secret travels only as a header, only when configured and well formed", async () => {
+    const cfg = crmConfigFromEnv({ ...ENV, CRM_INGEST_BYPASS_SECRET: BYPASS });
+    assert.equal(cfg.bypass, BYPASS);
+    assert.equal(crmConfigFromEnv({ ...ENV, CRM_INGEST_BYPASS_SECRET: "bad secret with spaces" }).bypass, undefined);
+    assert.equal(crmConfigFromEnv(ENV).bypass, undefined);
+    const f = fakeFetch({ [CFG.url]: [json(200, { status: "processed" }), json(200, { status: "processed" })] });
+    await relayToCrm({ a: 1 }, cfg, { fetch: f, ...fast });
+    await relayToCrm({ a: 1 }, crmConfigFromEnv(ENV), { fetch: f, ...fast });
+    assert.equal(f.calls[0].headers["x-vercel-protection-bypass"], BYPASS);
+    assert.equal(f.calls[1].headers["x-vercel-protection-bypass"], undefined);
+    assert.ok(!f.calls[0].body.includes(BYPASS));
+    assert.ok(!f.calls[0].url.includes(BYPASS));
   });
 });
 
