@@ -84,7 +84,7 @@ node scripts/qa-pixel.mjs https://www.likinagency.com    # píxel real: nada ant
 ## Vuelta atrás
 
 ```bash
-npx vercel rollback dpl_3WWkmGvqbngf9si9v1qN4eM9Us3M --scope likin-agency   # producción anterior (f981e35)
+npx vercel rollback dpl_77o9FH8ERfMuZZx5rsdeUYRmcDuN --scope likin-agency   # producción anterior (00babc8 = f981e35 + verificación de dominio de Meta)
 ```
 
 Restaura la web de hoy (que no guarda solicitudes: webhook vacío). Los leads del intervalo están en los emails de Resend. Para dejar `main` como estaba: `git revert -m 1 <commit de la fusión>` y push.
