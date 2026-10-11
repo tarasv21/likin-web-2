@@ -1,9 +1,8 @@
 /**
  * Data of the legal pages (/aviso-legal, /privacidad, /cookies and the line under the form).
- * Identity data given by Taras on 2026-10-10. What depends on a legal or business decision is left
- * empty on purpose — never invented — and shows as "[pendiente: …]" until it is filled in after the
- * legal review; the "provisional" notice stays until `reviewed` is true. `npm run launch:check`
- * refuses to give the go-ahead while anything is pending.
+ * Identity data given by Taras on 2026-10-10; retention and international transfers approved by
+ * Taras on 2026-10-11 (docs/LEGAL_REVIEW.md). Change the texts only with his approval, and bump
+ * `policyVersion` and `updated` when they change.
  */
 export const legal = {
   /** Titular del sitio y responsable del tratamiento (persona física). */
@@ -18,19 +17,31 @@ export const legal = {
   address: "C/ Víctor Balaguer, 1, 1LL, 25200 Cervera, Lleida, España",
   /** Inscripción registral: no aplica a un empresario individual. */
   registry: "",
-  /** Plazos de conservación de las solicitudes. Los decide el responsable con su asesor. */
-  retention: "",
-  /** Transferencias internacionales y su garantía, proveedor por proveedor. Se completa en la revisión jurídica. */
-  transfers: "",
-  /** true cuando un profesional haya revisado los textos de privacidad, cookies y aviso legal. */
-  reviewed: false,
+  /** Plazos de conservación (propuesta de docs/LEGAL_REVIEW.md §3, aprobada por Taras el 2026-10-11). */
+  retention: [
+    "Tu solicitud: mientras la gestionamos. Si no llega a haber relación comercial, la borramos a los 24 meses desde el último contacto. Si se convierte en un encargo, la conservamos durante los plazos que exija la ley.",
+    "Las copias técnicas que guardan nuestros proveedores (por ejemplo, Resend y Vercel) se conservan según los plazos de cada uno.",
+    "Tu decisión sobre las cookies se guarda en tu navegador y te la volvemos a pedir a los 12 meses. Cómo llegaste a la web se guarda hasta que cierras la pestaña. Lo que recibe Meta se rige por su propia política.",
+  ],
+  /** Transferencias internacionales y su garantía, proveedor por proveedor (decisión de Taras, 2026-10-11). */
+  transfers: [
+    "Algunos de nuestros proveedores son de fuera del Espacio Económico Europeo o guardan datos fuera de él. En todos los casos la transferencia se basa en una decisión de adecuación de la Comisión Europea:",
+    "Meta: Meta Platforms Ireland puede transferir los datos a Meta Platforms, Inc. (Estados Unidos), certificada en el Marco de Privacidad de Datos UE-EE. UU. (Data Privacy Framework).",
+    "Resend (Resend, Inc., Estados Unidos): los emails se envían desde su región de Japón, país con decisión de adecuación de la UE. Los datos de la cuenta, los metadatos de los envíos y los registros se guardan en Estados Unidos; Resend está certificada en el Data Privacy Framework.",
+    "Vercel (Vercel Inc., Estados Unidos): las funciones de la web se ejecutan en Fráncfort (Alemania); para lo que trate en Estados Unidos, Vercel está certificada en el Data Privacy Framework.",
+    "Google (Google Workspace): el correo puede tratarse en Estados Unidos por Google LLC, certificada en el Data Privacy Framework.",
+  ],
+  /**
+   * Aviso de «texto provisional» en las páginas legales. Taras aprobó los textos y pidió quitarlo el
+   * 2026-10-11. No significa que un profesional los haya revisado.
+   */
+  provisional: false,
   /** Fecha de la última actualización de los textos. */
   updated: "11 de octubre de 2026",
   /** Versión de la política de privacidad que se guarda con cada solicitud (sube con cada cambio de los textos). */
   policyVersion: "likinagency-privacidad@2026-10-11",
 };
 
-export const pending = (value: string, what: string) => value.trim() || `[pendiente: ${what}]`;
 
 /** «Taras Vasyliv (LIKIN Agency)». */
 export const holderWithTradeName = () => `${legal.holder} (${legal.tradeName})`;

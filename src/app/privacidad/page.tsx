@@ -1,6 +1,6 @@
 import { LegalPage, legalMetadata } from "@/components/LegalPage";
 import { site } from "@/data/site";
-import { legal, pending } from "@/data/legal";
+import { legal } from "@/data/legal";
 
 export const metadata = legalMetadata("Política de privacidad", site.routes.privacy);
 
@@ -47,8 +47,8 @@ export default function Page() {
             "Meta Platforms Ireland: solo si aceptas las cookies de medición. Desde tu navegador (píxel) y desde nuestro servidor (API de Conversiones) recibe las páginas que visitas (con la dirección completa, incluidos los parámetros de campaña y el identificador del clic), los clics en nuestro email y en el enlace de reserva, y el aviso de que has enviado una solicitud con el tipo de formulario, con un identificador de cada evento, los identificadores de sus cookies y los datos técnicos de tu conexión y navegador, como la dirección IP. Cuando envías el formulario, también tu email, tu teléfono y tu nombre de pila, cifrados con un hash irreversible (SHA-256) antes de salir de nuestro servidor, para que Meta pueda relacionar la solicitud con tu cuenta. Nunca tus respuestas.",
           ],
         },
-        { h: "Transferencias internacionales", p: [pending(legal.transfers, "transferencias internacionales de cada proveedor y su garantía; se completa en la revisión jurídica")] },
-        { h: "Cuánto tiempo", p: [pending(legal.retention, "plazos de conservación; los fija el responsable")] },
+        { h: "Transferencias internacionales", p: legal.transfers },
+        { h: "Cuánto tiempo", p: legal.retention },
         {
           h: "Tus derechos",
           p: [`Puedes pedir acceso, rectificación, supresión, oposición, limitación del tratamiento y portabilidad escribiendo a ${site.email}. Si crees que no hemos tratado bien tus datos, puedes reclamar ante la Agencia Española de Protección de Datos (aepd.es).`],
