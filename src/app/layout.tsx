@@ -32,6 +32,7 @@ export const metadata: Metadata = {
   openGraph: { type: "website", locale: site.locale, siteName: site.name },
   twitter: { card: "summary_large_image" },
   formatDetection: { telephone: false },
+  other: { "facebook-domain-verification": "e450nzhq935f13ez9hdeemxdm8uoeg" },
 };
 
 export const viewport: Viewport = {
