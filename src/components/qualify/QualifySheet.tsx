@@ -47,6 +47,8 @@ export function QualifySheet({ open, service, source, onClose, onService }: { op
   return (
     <dialog
       ref={ref}
+      // Microsoft Clarity no graba nada de lo que se escribe o se elige en el formulario.
+      data-clarity-mask="True"
       aria-label="Comprobar si Likin encaja con tu negocio"
       className={cn(
         "m-0 h-dvh max-h-none w-screen max-w-none border-0 bg-transparent p-0 text-cloud backdrop:bg-obsidian/85 backdrop:backdrop-blur-sm",

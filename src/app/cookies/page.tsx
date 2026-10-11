@@ -9,7 +9,15 @@ export default function Page() {
     <LegalPage
       title="Política de cookies"
       sections={[
-        { h: "Quién las usa", p: [`Esta web es de ${legal.holder} (${legal.tradeName}). Solo usa cookies de terceros si las aceptas: las de Google Analytics, para saber cómo se usa la web, y las de Meta, para medir los anuncios.`] },
+        { h: "Quién las usa", p: [`Esta web es de ${legal.holder} (${legal.tradeName}). Solo usa cookies de terceros si las aceptas: las de Google Analytics y Microsoft Clarity, para saber cómo se usa la web, y las de Meta, para medir los anuncios.`] },
+        {
+          h: "Cookies de análisis de uso de Microsoft Clarity (solo si las aceptas)",
+          p: [
+            "Si aceptas en el aviso de cookies, cargamos Microsoft Clarity, de Microsoft, para ver de forma agregada cómo se usa la web: dónde se hace clic, hasta dónde se baja y dónde se atasca la gente (mapas de calor y grabaciones de la navegación). Lo que escribes o eliges en el formulario no se graba: está oculto para Clarity. Sin las funciones publicitarias de Microsoft.",
+            "Instala en likinagency.com las cookies _clck (distingue tu navegador, 1 año) y _clsk (une las páginas de una misma visita, 1 día). Microsoft puede usar además sus propias cookies en sus dominios, según su declaración de privacidad (privacy.microsoft.com). Las grabaciones se conservan 30 días y los mapas de calor, 13 meses.",
+            "Si no aceptas, no se carga nada de Clarity y la web funciona igual.",
+          ],
+        },
         {
           h: "Cookies de analítica de Google (solo si las aceptas)",
           p: [
@@ -37,7 +45,7 @@ export default function Page() {
         },
         {
           h: "Cómo cambiar o retirar tu decisión",
-          p: ["Con «Configurar cookies», en el pie de cualquier página. Si las retiras, Google Analytics, el píxel y la API de Conversiones dejan de enviar datos y borramos sus cookies de esta web. También puedes borrar las cookies y el almacenamiento del sitio desde tu navegador."],
+          p: ["Con «Configurar cookies», en el pie de cualquier página. Si las retiras, Google Analytics, Microsoft Clarity, el píxel y la API de Conversiones dejan de enviar datos y borramos sus cookies de esta web. También puedes borrar las cookies y el almacenamiento del sitio desde tu navegador."],
         },
       ]}
     />

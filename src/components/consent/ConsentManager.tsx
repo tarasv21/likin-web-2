@@ -80,7 +80,7 @@ function ConsentPanel() {
           Cookies
         </h2>
         <p className="mt-3 text-small text-cloud/90">
-          Usamos cookies de Google Analytics y de Meta (terceros) para saber cómo se usa la web y qué anuncios nos traen solicitudes. Solo se activan si aceptas; si las rechazas, la web funciona igual.{" "}
+          Usamos cookies de Google Analytics, Microsoft Clarity y Meta (terceros) para saber cómo se usa la web y qué anuncios nos traen solicitudes. Solo se activan si aceptas; si las rechazas, la web funciona igual.{" "}
           <Link href={site.routes.cookies} className="text-cloud underline underline-offset-2 hover:text-teal">
             Política de cookies
           </Link>

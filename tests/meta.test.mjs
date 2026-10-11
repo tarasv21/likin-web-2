@@ -137,11 +137,11 @@ describe('/api/meta-capi', () => {
 import { CONSENT_MAX_AGE_MS, parseConsent, readConsent, saveConsent, stateOf } from '../src/lib/consent.ts';
 
 describe('consentimiento', () => {
-  test('solo cuenta una decisión válida, reciente y de esta versión (v1, solo Meta, se vuelve a pedir)', () => {
+  test('solo cuenta una decisión válida, reciente y de esta versión (v2, sin Clarity, se vuelve a pedir)', () => {
     const now = Date.parse('2026-10-11T10:00:00.000Z');
-    assert.deepEqual(parseConsent(JSON.stringify({ v: 2, ads: true, at: '2026-10-01T00:00:00.000Z' }), now), { v: 2, ads: true, at: '2026-10-01T00:00:00.000Z' });
-    for (const raw of [null, '{', JSON.stringify({ v: 1, ads: true, at: '2026-10-01T00:00:00.000Z' }), JSON.stringify({ v: 2, ads: 'sí', at: '2026-10-01T00:00:00.000Z' })]) assert.equal(parseConsent(raw, now), null);
-    assert.equal(parseConsent(JSON.stringify({ v: 2, ads: true, at: new Date(now - CONSENT_MAX_AGE_MS - 1).toISOString() }), now), null);
+    assert.deepEqual(parseConsent(JSON.stringify({ v: 3, ads: true, at: '2026-10-01T00:00:00.000Z' }), now), { v: 3, ads: true, at: '2026-10-01T00:00:00.000Z' });
+    for (const raw of [null, '{', JSON.stringify({ v: 2, ads: true, at: '2026-10-01T00:00:00.000Z' }), JSON.stringify({ v: 3, ads: 'sí', at: '2026-10-01T00:00:00.000Z' })]) assert.equal(parseConsent(raw, now), null);
+    assert.equal(parseConsent(JSON.stringify({ v: 3, ads: true, at: new Date(now - CONSENT_MAX_AGE_MS - 1).toISOString() }), now), null);
   });
   test('guardar y leer: sin decidir, aceptadas, rechazadas', () => {
     const data = new Map();

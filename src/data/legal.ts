@@ -21,7 +21,7 @@ export const legal = {
   retention: [
     "Tu solicitud: mientras la gestionamos. Si no llega a haber relación comercial, la borramos a los 24 meses desde el último contacto. Si se convierte en un encargo, la conservamos durante los plazos que exija la ley.",
     "Las copias técnicas que guardan nuestros proveedores (por ejemplo, Resend y Vercel) se conservan según los plazos de cada uno.",
-    "Tu decisión sobre las cookies se guarda en tu navegador y te la volvemos a pedir a los 12 meses. Cómo llegaste a la web se guarda hasta que cierras la pestaña. Lo que reciben Meta y Google Analytics se rige por sus propias políticas (en Google Analytics, también por el plazo de conservación configurado en la cuenta).",
+    "Tu decisión sobre las cookies se guarda en tu navegador y te la volvemos a pedir a los 12 meses. Cómo llegaste a la web se guarda hasta que cierras la pestaña. Lo que reciben Meta, Google Analytics y Microsoft Clarity se rige por sus propias políticas (en Google Analytics, también por el plazo de conservación configurado en la cuenta; en Clarity, 30 días las grabaciones y 13 meses los mapas de calor).",
   ],
   /** Transferencias internacionales y su garantía, proveedor por proveedor (decisión de Taras, 2026-10-11). */
   transfers: [
@@ -30,6 +30,7 @@ export const legal = {
     "Resend (Resend, Inc., Estados Unidos): los emails se envían desde su región de Japón, país con decisión de adecuación de la UE. Los datos de la cuenta, los metadatos de los envíos y los registros se guardan en Estados Unidos; Resend está certificada en el Data Privacy Framework.",
     "Vercel (Vercel Inc., Estados Unidos): las funciones de la web se ejecutan en Fráncfort (Alemania); para lo que trate en Estados Unidos, Vercel está certificada en el Data Privacy Framework.",
     "Google (Google Workspace y Google Analytics): los datos pueden tratarse en Estados Unidos por Google LLC, certificada en el Data Privacy Framework.",
+    "Microsoft (Microsoft Clarity): los datos pueden tratarse en Estados Unidos por Microsoft Corporation, certificada en el Data Privacy Framework.",
   ],
   /**
    * Aviso de «texto provisional» en las páginas legales. Taras aprobó los textos y pidió quitarlo el
@@ -39,7 +40,7 @@ export const legal = {
   /** Fecha de la última actualización de los textos. */
   updated: "11 de octubre de 2026",
   /** Versión de la política de privacidad que se guarda con cada solicitud (sube con cada cambio de los textos). */
-  policyVersion: "likinagency-privacidad@2026-10-11.2",
+  policyVersion: "likinagency-privacidad@2026-10-11.4",
 };
 
 
