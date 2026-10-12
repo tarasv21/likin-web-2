@@ -18,7 +18,7 @@ export default function Page() {
           p: [
             "Los que nos das en el formulario de precualificación: nombre, email, teléfono, nombre y enlace de tu marca (web o Instagram), tus respuestas sobre el negocio (por ejemplo, facturación, inversión en publicidad o plataforma), lo que quieras contarnos y tus consentimientos, con la fecha y la versión de esta política.",
             "Además, cómo llegaste a la web (página de llegada, web de origen, parámetros de la campaña e identificador del clic si vienes de un anuncio), solo si envías el formulario.",
-            "Nombre, email y teléfono son obligatorios, y marcar que has leído esta política: sin ellos no podemos responderte. El resto es opcional o depende de tus respuestas.",
+            "Son obligatorias las preguntas del formulario (algunas dependen de tus respuestas anteriores), el nombre y el enlace de tu marca, tu nombre, email y teléfono, y marcar que has leído esta política: sin ellos no podemos valorar tu solicitud ni responderte. Lo que quieras contarnos y la casilla de novedades son opcionales.",
             "Si aceptas cookies, los datos de navegación que explicamos en la política de cookies.",
           ],
         },
@@ -34,7 +34,7 @@ export default function Page() {
         {
           h: "Base jurídica",
           p: [
-            "Valorar tu solicitud, responderte, preparar una propuesta y hacer su seguimiento: la aplicación de medidas precontractuales a petición tuya (art. 6.1.b del RGPD). Nos pides una valoración y una propuesta, y para dártelas necesitamos esos datos; no depende de las cookies que aceptes.",
+            "Valorar tu solicitud, responderte, preparar una propuesta y hacer su seguimiento: la aplicación de medidas precontractuales a petición tuya (art. 6.1.b del RGPD). Nos pides una valoración y una propuesta, y para dártelas necesitamos esos datos; no depende de las cookies que aceptes. Si nos escribes en nombre de una empresa, la base es nuestro interés legítimo en atender la solicitud de esa empresa y mantener la relación con ella (art. 6.1.f del RGPD y art. 19 de la Ley Orgánica 3/2018).",
             "Saber qué canal o campaña nos trajo tu solicitud: nuestro interés legítimo en medir nuestra publicidad (art. 6.1.f del RGPD). Solo usamos los datos de llegada que se envían con la solicitud y puedes oponerte escribiéndonos.",
             "Enviarte contenidos y novedades: tu consentimiento, con la casilla opcional del formulario.",
             "Analítica (Google Analytics y Microsoft Clarity) y publicidad (Meta): tu consentimiento en el aviso de cookies, cada una por separado.",
