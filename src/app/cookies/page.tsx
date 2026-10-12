@@ -55,7 +55,7 @@ export default function Page() {
           h: "Cómo cambiar o retirar tu decisión",
           p: [
             "Cuando quieras, con «Configurar cookies», en el pie de cualquier página: vuelve a abrir el aviso con tu decisión actual y puedes activar o desactivar cada finalidad.",
-            "Si retiras la analítica, Google Analytics y Microsoft Clarity dejan de enviar datos y borramos sus cookies de esta web. Si retiras la publicidad, el píxel y la API de Conversiones dejan de enviar datos y borramos las cookies de Meta de esta web. Retirarla no afecta a lo enviado antes.",
+            "Si retiras la analítica, Google Analytics y Microsoft Clarity dejan de enviar datos y borramos sus cookies de esta web. Si retiras la publicidad, el píxel y la API de Conversiones dejan de enviar datos y borramos las cookies de Meta de esta web. Retirar una finalidad no afecta a lo que ya se envió antes.",
             "También puedes borrar las cookies y el almacenamiento del sitio desde tu navegador; en ese caso te volveremos a preguntar.",
           ],
         },
