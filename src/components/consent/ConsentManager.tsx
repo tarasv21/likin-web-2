@@ -3,9 +3,9 @@
 import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CONSENT_EVENT, CONSENT_KEY, CONSENT_OPEN_EVENT, readConsent, saveConsent, stateOf, type ConsentState } from "@/lib/consent";
+import { CONSENT_EVENT, CONSENT_KEY, CONSENT_OPEN_EVENT, choiceOf, keyOf, readConsent, saveConsent, type ConsentChoice, type ConsentKey } from "@/lib/consent";
 import { metaPixel } from "@/lib/meta-pixel";
-import { initConversionTracking, trackEvent, viewContentFor } from "@/lib/meta";
+import { trackEvent } from "@/lib/meta";
 import { site } from "@/data/site";
 import { ga } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
@@ -21,16 +21,17 @@ function subscribe(onChange: () => void) {
     window.removeEventListener("storage", onStorage);
   };
 }
-const snapshot = (): ConsentState => stateOf(readConsent());
+const snapshot = (): ConsentKey => keyOf(readConsent());
 // El servidor nunca sabe la decisión: no pinta nada (sin parpadeo para quien ya decidió).
-const serverSnapshot = (): ConsentState | "unknown" => "unknown";
+const serverSnapshot = (): ConsentKey | "unknown" => "unknown";
 
-/** La decisión de cookies de este navegador ("unknown" en el servidor y al hidratar). */
-export const useConsentState = () => useSyncExternalStore(subscribe, snapshot, serverSnapshot);
+/** La decisión de cookies de este navegador: "unknown" (servidor e hidratación), "undecided" o "a1-p0"… */
+export const useConsentKey = () => useSyncExternalStore(subscribe, snapshot, serverSnapshot);
 
 /**
- * Aviso de cookies: Google Analytics (Analytics.tsx) y Meta (píxel y API de Conversiones), las dos
- * con la misma decisión. Sin píxel ni Google Analytics no habría cookies opcionales ni aviso.
+ * Aviso de cookies por finalidades: Analítica (Google Analytics y Microsoft Clarity, Analytics.tsx) y
+ * Publicidad (Meta: píxel y API de Conversiones, aquí). «Rechazar todas», «Configurar» y «Aceptar
+ * todas» con el mismo peso; «Configurar cookies» del pie lo reabre para cambiar la decisión.
  */
 export function ConsentManager() {
   if (!metaPixel.configured && !ga.measurementId) return null;
@@ -38,63 +39,124 @@ export function ConsentManager() {
 }
 
 function ConsentPanel() {
-  const state = useConsentState();
+  const key = useConsentKey();
+  const choice = choiceOf(key);
   const [reopened, setReopened] = useState(false);
+  const [configuring, setConfiguring] = useState(false);
+  const [draft, setDraft] = useState<ConsentChoice>({ analytics: false, ads: false });
   const pathname = usePathname();
   const lastViewed = useRef<string | null>(null);
   const titleId = useId();
 
-  // La decisión manda: el píxel solo se carga tras un «Aceptar»; un «Rechazar» borra sus cookies.
-  // Un PageView por página (píxel + API con el mismo event_id), también en la navegación interna;
-  // en las páginas de servicio y de casos, además un ViewContent.
+  // Publicidad: el píxel solo se carga con ella; retirarla lo detiene y borra sus cookies. Un
+  // PageView por página (píxel + API con el mismo event_id), también en la navegación interna.
   useEffect(() => {
-    if (state === "granted") {
+    if (choice?.ads) {
       metaPixel.grant(null);
-      initConversionTracking();
-      if (lastViewed.current !== pathname && trackEvent("PageView") !== null) {
-        lastViewed.current = pathname;
-        const view = viewContentFor(pathname);
-        if (view) trackEvent("ViewContent", view);
-      }
-    } else if (state === "denied") metaPixel.revoke();
-  }, [state, pathname]);
+      if (lastViewed.current !== pathname && trackEvent("PageView") !== null) lastViewed.current = pathname;
+    } else if (choice) {
+      metaPixel.revoke();
+      lastViewed.current = null;
+    }
+  }, [choice?.ads, choice, pathname]);
 
   useEffect(() => {
-    const open = () => setReopened(true);
+    const open = () => {
+      const current = choiceOf(keyOf(readConsent()));
+      setDraft(current ?? { analytics: false, ads: false });
+      setConfiguring(true);
+      setReopened(true);
+    };
     window.addEventListener(CONSENT_OPEN_EVENT, open);
     return () => window.removeEventListener(CONSENT_OPEN_EVENT, open);
   }, []);
 
-  if (state === "unknown" || (state !== "undecided" && !reopened)) return null;
+  if (key === "unknown" || (key !== "undecided" && !reopened)) return null;
 
-  const decide = (ads: boolean) => {
-    saveConsent(ads);
+  const decide = (c: ConsentChoice) => {
+    saveConsent(c);
     setReopened(false);
+    setConfiguring(false);
   };
-  const button = "inline-flex h-11 flex-1 items-center justify-center rounded-button border border-outline bg-transparent px-5 text-[0.9375rem] font-medium text-cloud transition-colors duration-(--dur-fast) hover:border-steel hover:bg-graphite md:flex-none";
+  const button =
+    "inline-flex h-11 items-center justify-center rounded-button border border-outline bg-transparent px-4 text-[0.9375rem] font-medium text-cloud transition-colors duration-(--dur-fast) hover:border-steel hover:bg-graphite";
+  const yesNo = (v: boolean) => (v ? "sí" : "no");
 
   return (
-    <section role="region" aria-labelledby={titleId} className="fixed inset-x-0 bottom-0 z-(--z-consent) p-3 pb-[max(12px,env(safe-area-inset-bottom))] md:inset-x-auto md:bottom-5 md:left-5 md:max-w-[440px] md:p-0">
-      <div className="rounded-card border border-hairline bg-graphite p-5 shadow-capsule">
+    <section role="region" aria-labelledby={titleId} className="fixed inset-x-0 bottom-0 z-(--z-consent) p-3 pb-[max(12px,env(safe-area-inset-bottom))] md:inset-x-auto md:bottom-5 md:left-5 md:max-w-[460px] md:p-0">
+      <div className="max-h-[80dvh] overflow-y-auto rounded-card border border-hairline bg-graphite p-5 shadow-capsule">
         <h2 id={titleId} className="text-label text-steel">
           Cookies
         </h2>
         <p className="mt-3 text-small text-cloud/90">
-          Usamos cookies de Google Analytics, Microsoft Clarity y Meta (terceros) para saber cómo se usa la web y qué anuncios nos traen solicitudes. Solo se activan si aceptas; si las rechazas, la web funciona igual.{" "}
+          Usamos cookies de analítica (Google Analytics y Microsoft Clarity), para saber cómo se usa la web, y de publicidad (Meta), para medir qué anuncios nos traen solicitudes. Solo se activan las que aceptes; si las rechazas, la web funciona igual.{" "}
           <Link href={site.routes.cookies} className="text-cloud underline underline-offset-2 hover:text-teal">
             Política de cookies
           </Link>
         </p>
-        {state !== "undecided" && <p className="mt-2 text-small text-steel">Ahora mismo están {state === "granted" ? "aceptadas" : "rechazadas"}.</p>}
-        <div className="mt-4 flex gap-2">
-          <button type="button" onClick={() => decide(false)} className={cn(button)}>
-            Rechazar
+        {choice && (
+          <p className="mt-2 text-small text-steel">
+            Ahora mismo: analítica {yesNo(choice.analytics)} · publicidad {yesNo(choice.ads)}.
+          </p>
+        )}
+
+        {configuring && (
+          <fieldset className="mt-4 grid gap-3 border-t border-hairline pt-4">
+            <legend className="sr-only">Elige qué cookies aceptas</legend>
+            <Purpose
+              label="Analítica"
+              text="Google Analytics y Microsoft Clarity: cuántas personas visitan la web, de dónde llegan y cómo la usan (mapas de calor y grabaciones de la navegación, con el formulario oculto)."
+              checked={draft.analytics}
+              onChange={(v) => setDraft({ ...draft, analytics: v })}
+            />
+            <Purpose
+              label="Publicidad"
+              text="Meta (píxel y API de Conversiones): qué anuncios nos traen visitas y solicitudes."
+              checked={draft.ads}
+              onChange={(v) => setDraft({ ...draft, ads: v })}
+            />
+          </fieldset>
+        )}
+
+        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
+          <button type="button" onClick={() => decide({ analytics: false, ads: false })} className={button}>
+            Rechazar todas
           </button>
-          <button type="button" onClick={() => decide(true)} className={cn(button)}>
-            Aceptar
+          {configuring ? (
+            <button type="button" onClick={() => decide(draft)} className={cn(button, "col-span-2 sm:col-span-1 sm:order-none order-last")}>
+              Guardar selección
+            </button>
+          ) : (
+            <button type="button" onClick={() => { setDraft(choice ?? { analytics: false, ads: false }); setConfiguring(true); }} className={cn(button, "col-span-2 sm:col-span-1 sm:order-none order-last")}>
+              Configurar
+            </button>
+          )}
+          <button type="button" onClick={() => decide({ analytics: true, ads: true })} className={button}>
+            Aceptar todas
           </button>
         </div>
       </div>
     </section>
+  );
+}
+
+function Purpose({ label, text, checked, onChange }: { label: string; text: string; checked: boolean; onChange: (v: boolean) => void }) {
+  const id = useId();
+  return (
+    <div className="flex items-start gap-3">
+      <input
+        id={id}
+        type="checkbox"
+        role="switch"
+        aria-checked={checked}
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="mt-1 size-[18px] shrink-0 cursor-pointer appearance-none rounded-[5px] border border-outline transition-colors checked:border-teal checked:bg-teal"
+      />
+      <label htmlFor={id} className="text-small text-cloud/90">
+        <span className="font-medium text-cloud">{label}</span>
+        <span className="mt-0.5 block text-steel">{text}</span>
+      </label>
+    </div>
   );
 }

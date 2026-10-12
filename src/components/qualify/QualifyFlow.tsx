@@ -228,7 +228,7 @@ export function QualifyFlow({ service, source, onClose, onSwitchToBuild }: { ser
     pending.current = null;
     setStored(res.stored);
     // Lead en el píxel solo si la solicitud se ha recibido de verdad (y una vez por lead).
-    if (res.stored && consented) trackEvent("Lead", { content_name: service, content_category: SITE, qualification: verdict.qualification }, { eventId: lead.lead_id, server: false });
+    if (res.stored && consented) trackEvent("Lead", { content_name: service, content_category: SITE }, { eventId: lead.lead_id, server: false });
     track("qualification_submitted", { service, qualification: verdict.qualification, next_action: verdict.next_action, lead_score: verdict.lead_score, reasons: verdict.qualification_reasons, ok: true });
     if (verdict.requires_manual_review) track("manual_review_submitted", { service, qualification: verdict.qualification });
     clearSession();

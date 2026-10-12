@@ -5,7 +5,8 @@ import { GoogleAnalytics } from "@next/third-parties/google";
 import { clarity, ga } from "@/lib/analytics";
 import type { ClarityHost } from "@/lib/clarity";
 import type { GaHost } from "@/lib/ga";
-import { useConsentState } from "@/components/consent/ConsentManager";
+import { useConsentKey } from "@/components/consent/ConsentManager";
+import { choiceOf } from "@/lib/consent";
 
 const host = () => window as unknown as GaHost;
 
@@ -18,22 +19,24 @@ function GaConsent() {
 }
 
 /**
- * Google Analytics 4 con <GoogleAnalytics /> de @next/third-parties, una sola vez para toda la web, y
- * Microsoft Clarity (src/lib/clarity.ts),
- * SOLO tras «Aceptar» y solo en el dominio real (src/lib/ga.ts). Al rechazar o retirar el
- * consentimiento, GA se desactiva y sus cookies se borran. Las páginas nuevas de la navegación
+ * Analítica: Google Analytics 4 con <GoogleAnalytics /> de @next/third-parties, una sola vez para toda
+ * la web, y Microsoft Clarity (src/lib/clarity.ts), SOLO con la finalidad «Analítica» aceptada y solo en
+ * el dominio real (src/lib/ga.ts). Al rechazarla o retirarla, GA y Clarity se desactivan y sus cookies
+ * se borran. Las páginas nuevas de la navegación
  * interna las mide GA con el historial del navegador (medición mejorada).
  */
 export function Analytics() {
-  const state = useConsentState();
+  const choice = choiceOf(useConsentKey());
+  const decided = choice !== null;
+  const analytics = choice?.analytics === true;
   useEffect(() => {
-    if (state === "granted") clarity.load(window as unknown as ClarityHost);
-    else if (state === "denied") {
+    if (analytics) clarity.load(window as unknown as ClarityHost);
+    else if (decided) {
       ga.revoke(host());
       clarity.revoke(window as unknown as ClarityHost);
     }
-  }, [state]);
-  const on = state === "granted" && typeof window !== "undefined" && ga.allowedOn(window.location.hostname);
+  }, [analytics, decided]);
+  const on = analytics && typeof window !== "undefined" && ga.allowedOn(window.location.hostname);
   if (!on) return null;
   return (
     <>

@@ -1,12 +1,14 @@
 // meta-capi.ts: API de Conversiones de Meta (SERVIDOR). Los mismos eventos que el píxel, con el
-// mismo event_id (Meta deduplica), solo con el consentimiento del visitante. El token solo vive en
-// el servidor: viaja en el cuerpo de la petición a Meta (nunca en la URL) y no se escribe en logs.
-// Mismo código en likinagency.com (src/lib/meta-capi.ts allí): mantenerlos en sincronía.
+// mismo event_id (Meta deduplica), solo con el consentimiento de publicidad del visitante. El token
+// solo vive en el servidor: viaja en el cuerpo de la petición a Meta (nunca en la URL) y no se escribe
+// en logs. likinagency.com (decisión de Taras, 2026-10-12): solo PageView y Lead, sin datos de
+// contacto ni respuestas: Meta recibe los identificadores técnicos de la visita (IP, navegador,
+// _fbp/_fbc), la página y, en el Lead, el servicio (BUILD/SCALE). Nunca coincidencia avanzada.
 export const GRAPH_API_VERSION = 'v26.0';
-export const CAPI_EVENTS = ['PageView', 'Lead', 'Contact', 'Schedule', 'ViewContent', 'InitiateCheckout', 'AbrirFormulario', 'PasoContacto', 'IrALikinAgency'] as const;
+export const CAPI_EVENTS = ['PageView', 'Lead'] as const;
 export type CapiEventName = (typeof CAPI_EVENTS)[number];
 /** Los que el navegador puede pedir por /api/meta-capi. El Lead lo envía el servidor del formulario. */
-export const BROWSER_EVENTS: readonly CapiEventName[] = CAPI_EVENTS.filter((e) => e !== 'Lead');
+export const BROWSER_EVENTS: readonly CapiEventName[] = ['PageView'];
 const EVENT_ID = /^[A-Za-z0-9_-]{8,100}$/;
 
 export type CapiConfig = { pixelId: string; token: string; testCode?: string };
@@ -18,32 +20,6 @@ export function capiConfigFrom(env: { pixelId?: string; token?: string; testCode
   if (!pixelId || !/^\d{6,20}$/.test(pixelId) || !token || token.length < 20) return null;
   const testCode = env.testCode?.trim();
   return { pixelId, token, ...(testCode ? { testCode } : {}) };
-}
-
-/** SHA-256 en hexadecimal (Web Crypto: sin dependencias, igual en Node y en el edge). */
-export async function sha256(v: string): Promise<string> {
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(v));
-  return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('');
-}
-
-/** Normalización de Meta antes del hash: email en minúsculas y sin espacios. */
-export function normalizeEmail(v: string | undefined): string | undefined {
-  const e = v?.trim().toLowerCase().replace(/\s+/g, '');
-  return e && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e) ? e : undefined;
-}
-
-/** Teléfono: solo dígitos y con prefijo de país sin «+» (un móvil o fijo español de 9 cifras recibe 34). */
-export function normalizePhone(v: string | undefined, defaultCountry = '34'): string | undefined {
-  let d = (v ?? '').replace(/\D+/g, '');
-  if (d.startsWith('00')) d = d.slice(2);
-  if (d.length === 9 && /^[6789]/.test(d)) d = defaultCountry + d;
-  return d.length >= 10 && d.length <= 15 ? d : undefined;
-}
-
-/** Nombre de pila: la primera palabra, en minúsculas, sin signos ni números. */
-export function normalizeFirstName(v: string | undefined): string | undefined {
-  const first = (v ?? '').trim().split(/\s+/)[0]?.toLowerCase().replace(/[^\p{L}]/gu, '');
-  return first ? first : undefined;
 }
 
 export function readCookie(header: string | null | undefined, name: string): string | undefined {
@@ -80,24 +56,16 @@ export type CapiEventInput = {
   fbp?: string;
   fbc?: string;
   custom?: Record<string, string>;
-  /** Solo para el Lead: datos del formulario, que se normalizan y se cifran con hash aquí. */
-  person?: { email?: string; phone?: string; name?: string };
 };
 
 export async function buildEvent(e: CapiEventInput) {
   const timeMs = e.timeMs ?? Date.now();
-  const em = normalizeEmail(e.person?.email);
-  const ph = normalizePhone(e.person?.phone);
-  const fn = normalizeFirstName(e.person?.name);
   const user_data: Record<string, unknown> = {};
   if (e.ip) user_data.client_ip_address = e.ip;
   if (e.userAgent) user_data.client_user_agent = e.userAgent.slice(0, 512);
   if (e.fbp) user_data.fbp = e.fbp;
   const fbc = fbcFrom(e.fbc, e.url, timeMs);
   if (fbc) user_data.fbc = fbc;
-  if (em) user_data.em = [await sha256(em)];
-  if (ph) user_data.ph = [await sha256(ph)];
-  if (fn) user_data.fn = [await sha256(fn)];
   return {
     event_name: e.name,
     event_time: Math.floor(timeMs / 1000),
@@ -180,7 +148,7 @@ export async function handleBrowserEvent(request: Request, deps: BrowserEventDep
   }
   const custom: Record<string, string> = {};
   if (body.custom_data && typeof body.custom_data === 'object') {
-    for (const k of ['content_name', 'content_category', 'cta'] as const) {
+    for (const k of ['content_name', 'content_category'] as const) {
       const v = (body.custom_data as Record<string, unknown>)[k];
       if (typeof v === 'string' && v.length <= 60) custom[k] = v;
     }

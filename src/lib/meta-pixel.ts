@@ -3,16 +3,16 @@
  * antes, nada de Meta (ni script, ni cookie, ni petición). Mismo código en likinagency.com.
  *
  * Cada evento lleva un `eventID` que también viaja a la API de Conversiones (meta.ts → servidor),
- * para que Meta cuente uno solo. Los estándar van con `track`; los propios (AbrirFormulario,
- * PasoContacto, IrALikinAgency), con `trackCustom`. Sin configuración automática de eventos ni coincidencia avanzada
+ * para que Meta cuente uno solo. En likinagency.com solo PageView y Lead. Sin configuración automática de eventos ni coincidencia avanzada
  * en el navegador. Un Lead por id (sessionStorage + memoria): doble clic o reintento no cuentan dos
  * veces. Retirar el consentimiento detiene el píxel y borra `_fbp` y `_fbc` de esta web.
  */
 export const META_PIXEL_SRC = 'https://connect.facebook.net/en_US/fbevents.js';
 export const LEADS_SENT_KEY = 'likin.pixel.leads.v1';
-export const META_EVENTS = ['PageView', 'Lead', 'Contact', 'Schedule', 'ViewContent', 'InitiateCheckout', 'AbrirFormulario', 'PasoContacto', 'IrALikinAgency'] as const;
-/** Eventos estándar de Meta; el resto son eventos personalizados. */
-export const STANDARD_EVENTS: readonly string[] = ['PageView', 'Lead', 'Contact', 'Schedule', 'ViewContent', 'InitiateCheckout'];
+/** likinagency.com: solo PageView y Lead (decisión de Taras, 2026-10-12). */
+export const META_EVENTS = ['PageView', 'Lead'] as const;
+/** Eventos estándar de Meta; el resto serían eventos personalizados. */
+export const STANDARD_EVENTS: readonly string[] = ['PageView', 'Lead'];
 export type MetaEventName = (typeof META_EVENTS)[number];
 export type MetaParams = Record<string, string>;
 const MAX_REMEMBERED = 20;
@@ -27,23 +27,6 @@ type FbqFn = ((...args: unknown[]) => void) & {
   disablePushState?: boolean;
   allowDuplicatePageViews?: boolean;
 };
-
-/** Enlaces que cuentan como Contact: email, teléfono y WhatsApp. */
-export const CONTACT_LINKS = 'a[href^="mailto:"], a[href^="tel:"], a[href*="wa.me/"], a[href*="whatsapp.com/"]';
-
-/** El canal de un enlace de contacto (content_name del evento Contact), o null si no lo es. */
-export function contactChannel(href: string): 'email' | 'phone' | 'whatsapp' | null {
-  const h = href.trim().toLowerCase();
-  if (h.startsWith('mailto:')) return 'email';
-  if (h.startsWith('tel:')) return 'phone';
-  try {
-    const host = new URL(h).hostname;
-    if (host === 'wa.me' || host === 'whatsapp.com' || host.endsWith('.whatsapp.com')) return 'whatsapp';
-  } catch {
-    // Relative or malformed: not a contact link.
-  }
-  return null;
-}
 
 export type PixelHost = {
   fbq?: FbqFn;

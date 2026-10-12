@@ -2,11 +2,9 @@
 // hash, fbc, token fuera de la URL y de los logs, endpoint restringido). Sin red: fetch simulado.
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createHash } from 'node:crypto';
-import { CONTACT_LINKS, contactChannel, createMetaPixel, pixelIdFrom } from '../src/lib/meta-pixel.ts';
-import { buildEvent, capiConfigFrom, fbcFrom, handleBrowserEvent, normalizeEmail, normalizeFirstName, normalizePhone, readCookie, sendCapi, sha256 } from '../src/lib/meta-capi.ts';
+import { META_EVENTS, createMetaPixel, pixelIdFrom } from '../src/lib/meta-pixel.ts';
+import { BROWSER_EVENTS, CAPI_EVENTS, buildEvent, capiConfigFrom, fbcFrom, handleBrowserEvent, readCookie, sendCapi } from '../src/lib/meta-capi.ts';
 
-const hex = (v) => createHash('sha256').update(v).digest('hex');
 const TOKEN = 'EAAB-token-de-prueba-no-real-0123456789';
 const CFG = { pixelId: '2270277029972714', token: TOKEN };
 
@@ -34,13 +32,12 @@ describe('píxel', () => {
     const px = createMetaPixel('2270277029972714', () => f.host);
     px.grant(null);
     assert.equal(px.track('PageView', {}, 'evt-page-0001'), true);
-    assert.equal(px.track('Contact', { content_name: 'email' }, 'evt-contact-01'), true);
+    assert.equal(px.track('Contact', { content_name: 'email' }, 'evt-contact-01'), false, 'likinagency: solo PageView y Lead');
     assert.equal(px.track('Lead', { content_name: 'SCALE' }, 'evt-lead-0001'), true);
     assert.equal(px.track('Lead', { content_name: 'SCALE' }, 'evt-lead-0001'), false);
     assert.equal(px.track('Purchase', {}, 'evt-buy-00001'), false);
     assert.deepEqual(f.calls().slice(3), [
       ['track', 'PageView', {}, { eventID: 'evt-page-0001' }],
-      ['track', 'Contact', { content_name: 'email' }, { eventID: 'evt-contact-01' }],
       ['track', 'Lead', { content_name: 'SCALE' }, { eventID: 'evt-lead-0001' }],
     ]);
   });
@@ -55,16 +52,10 @@ describe('píxel', () => {
 });
 
 describe('API de Conversiones', () => {
-  test('normalización de Meta y SHA-256', async () => {
-    assert.equal(normalizeEmail('  Ana.Pérez@Example.COM '), 'ana.pérez@example.com');
-    assert.equal(normalizeEmail('no-es-email'), undefined);
-    assert.equal(normalizePhone('+34 600 12 34 56'), '34600123456');
-    assert.equal(normalizePhone('600 123 456'), '34600123456');
-    assert.equal(normalizePhone('0044 7700 900123'), '447700900123');
-    assert.equal(normalizePhone('123'), undefined);
-    assert.equal(normalizeFirstName('  María José Pérez '), 'maría');
-    assert.equal(normalizeFirstName("O'Brien"), 'obrien');
-    assert.equal(await sha256('ana@example.com'), hex('ana@example.com'));
+  test('likinagency: solo PageView y Lead; el navegador solo puede pedir PageView', () => {
+    assert.deepEqual([...META_EVENTS], ['PageView', 'Lead']);
+    assert.deepEqual([...CAPI_EVENTS], ['PageView', 'Lead']);
+    assert.deepEqual([...BROWSER_EVENTS], ['PageView']);
   });
   test('fbc de la cookie o construido desde el fbclid de la URL', () => {
     assert.equal(fbcFrom('fb.1.1700000000000.AbCdEf123', undefined, 1), 'fb.1.1700000000000.AbCdEf123');
@@ -72,14 +63,15 @@ describe('API de Conversiones', () => {
     assert.equal(fbcFrom(undefined, 'https://www.likinagency.com/', 1), undefined);
     assert.equal(readCookie('a=1; _fbp=fb.1.2.3; _fbc=fb.1.4.x', '_fbp'), 'fb.1.2.3');
   });
-  test('el evento lleva lo pedido y los datos personales solo con hash', async () => {
+  test('el evento lleva lo pedido y ningún dato de contacto (sin coincidencia avanzada)', async () => {
     const e = await buildEvent({ name: 'Lead', id: 'evt-lead-0009', url: 'https://www.likinagency.com/?fbclid=IwAR0abcdefghij', timeMs: 1790000000123, ip: '203.0.113.7', userAgent: 'UA', fbp: 'fb.1.2.3', custom: { content_name: 'SCALE', content_category: 'likinagency.com' }, person: { email: 'Ana@Example.com', name: 'Ana López', phone: '600123456' } });
     assert.deepEqual(e, {
       event_name: 'Lead', event_time: 1790000000, event_id: 'evt-lead-0009', action_source: 'website', event_source_url: 'https://www.likinagency.com/?fbclid=IwAR0abcdefghij',
-      user_data: { client_ip_address: '203.0.113.7', client_user_agent: 'UA', fbp: 'fb.1.2.3', fbc: 'fb.1.1790000000123.IwAR0abcdefghij', em: [hex('ana@example.com')], ph: [hex('34600123456')], fn: [hex('ana')] },
+      user_data: { client_ip_address: '203.0.113.7', client_user_agent: 'UA', fbp: 'fb.1.2.3', fbc: 'fb.1.1790000000123.IwAR0abcdefghij' },
       custom_data: { content_name: 'SCALE', content_category: 'likinagency.com' },
     });
-    assert.doesNotMatch(JSON.stringify(e), /Ana@|López|600123456/);
+    for (const k of ['em', 'ph', 'fn']) assert.equal(k in e.user_data, false, k);
+    assert.doesNotMatch(JSON.stringify(e), /Ana|López|600123456|example\.com/i);
   });
   test('Graph API v26: token en el cuerpo (nunca en la URL), código de prueba si existe; errores sin token', async () => {
     const calls = [];
@@ -100,7 +92,7 @@ describe('API de Conversiones', () => {
 
 describe('/api/meta-capi', () => {
   const req = (body, headers = {}) => new Request('https://www.likinagency.com/api/meta-capi', { method: 'POST', headers: { host: 'www.likinagency.com', origin: 'https://www.likinagency.com', 'content-type': 'application/json', cookie: '_fbp=fb.1.2.3', 'x-forwarded-for': '203.0.113.9, 10.0.0.1', 'user-agent': 'UA', ...headers }, body: JSON.stringify(body) });
-  const ok = { event_name: 'Contact', event_id: 'evt-contact-02', event_source_url: 'https://www.likinagency.com/#contacto', custom_data: { content_name: 'email', content_category: 'likinagency.com', email: 'x@y.example' }, consent: true };
+  const ok = { event_name: 'PageView', event_id: 'evt-page-00002', event_source_url: 'https://www.likinagency.com/escalar-ecommerce', custom_data: { content_name: 'SCALE', content_category: 'likinagency.com', email: 'x@y.example', qualification: 'HIGH_FIT' }, consent: true };
   test('reenvía un evento válido con IP, navegador, fbp y solo los datos permitidos', async () => {
     const sent = [];
     const logs = [];
@@ -108,20 +100,21 @@ describe('/api/meta-capi', () => {
     assert.equal(res.status, 204);
     assert.equal(sent.length, 1);
     const e = sent[0].data[0];
-    assert.equal(e.event_name, 'Contact');
-    assert.equal(e.event_id, 'evt-contact-02');
+    assert.equal(e.event_name, 'PageView');
+    assert.equal(e.event_id, 'evt-page-00002');
     assert.equal(e.user_data.client_ip_address, '203.0.113.9');
     assert.equal(e.user_data.fbp, 'fb.1.2.3');
-    assert.deepEqual(e.custom_data, { content_name: 'email', content_category: 'likinagency.com' });
+    assert.deepEqual(e.custom_data, { content_name: 'SCALE', content_category: 'likinagency.com' });
     assert.doesNotMatch(JSON.stringify(logs), /EAAB/);
   });
-  test('rechaza sin consentimiento, de otro origen, eventos no permitidos (Lead incluido), URL ajena e ids malos', async () => {
+  test('rechaza sin consentimiento, de otro origen, cualquier evento que no sea PageView (Lead incluido), URL ajena e ids malos', async () => {
     let sent = 0;
     const deps = { config: CFG, fetch: async () => { sent++; return new Response('{}'); } };
     assert.equal((await handleBrowserEvent(req({ ...ok, consent: false }), deps)).status, 400);
     assert.equal((await handleBrowserEvent(req(ok, { origin: 'https://evil.example' }), deps)).status, 403);
     assert.equal((await handleBrowserEvent(req({ ...ok, event_name: 'Lead' }), deps)).status, 400);
     assert.equal((await handleBrowserEvent(req({ ...ok, event_name: 'Purchase' }), deps)).status, 400);
+    for (const name of ['Contact', 'Schedule', 'ViewContent', 'InitiateCheckout', 'AbrirFormulario', 'PasoContacto']) assert.equal((await handleBrowserEvent(req({ ...ok, event_name: name }), deps)).status, 400, name);
     assert.equal((await handleBrowserEvent(req({ ...ok, event_source_url: 'https://evil.example/' }), deps)).status, 400);
     assert.equal((await handleBrowserEvent(req({ ...ok, event_id: 'x' }), deps)).status, 400);
     assert.equal(sent, 0);
@@ -134,34 +127,26 @@ describe('/api/meta-capi', () => {
   });
 });
 
-import { CONSENT_MAX_AGE_MS, parseConsent, readConsent, saveConsent, stateOf } from '../src/lib/consent.ts';
+import { CONSENT_MAX_AGE_MS, choiceOf, keyOf, parseConsent, readConsent, saveConsent } from '../src/lib/consent.ts';
 
-describe('consentimiento', () => {
-  test('solo cuenta una decisión válida, reciente y de esta versión (v2, sin Clarity, se vuelve a pedir)', () => {
-    const now = Date.parse('2026-10-11T10:00:00.000Z');
-    assert.deepEqual(parseConsent(JSON.stringify({ v: 3, ads: true, at: '2026-10-01T00:00:00.000Z' }), now), { v: 3, ads: true, at: '2026-10-01T00:00:00.000Z' });
-    for (const raw of [null, '{', JSON.stringify({ v: 2, ads: true, at: '2026-10-01T00:00:00.000Z' }), JSON.stringify({ v: 3, ads: 'sí', at: '2026-10-01T00:00:00.000Z' })]) assert.equal(parseConsent(raw, now), null);
-    assert.equal(parseConsent(JSON.stringify({ v: 3, ads: true, at: new Date(now - CONSENT_MAX_AGE_MS - 1).toISOString() }), now), null);
+describe('consentimiento por finalidades', () => {
+  test('solo cuenta una decisión v4 válida y reciente (las de todo o nada se vuelven a pedir)', () => {
+    const now = Date.parse('2026-10-12T10:00:00.000Z');
+    const ok = { v: 4, analytics: true, ads: false, at: '2026-10-01T00:00:00.000Z' };
+    assert.deepEqual(parseConsent(JSON.stringify(ok), now), ok);
+    for (const raw of [null, '{', JSON.stringify({ v: 3, ads: true, at: ok.at }), JSON.stringify({ v: 4, ads: true, at: ok.at }), JSON.stringify({ ...ok, analytics: 'sí' })]) assert.equal(parseConsent(raw, now), null);
+    assert.equal(parseConsent(JSON.stringify({ ...ok, at: new Date(now - CONSENT_MAX_AGE_MS - 1).toISOString() }), now), null);
   });
-  test('guardar y leer: sin decidir, aceptadas, rechazadas', () => {
+  test('guardar y leer cada combinación; la clave estable para React y su elección', () => {
     const data = new Map();
     const s = { getItem: (k) => data.get(k) ?? null, setItem: (k, v) => data.set(k, v) };
-    assert.equal(stateOf(readConsent(s)), 'undecided');
-    saveConsent(true, s);
-    assert.equal(stateOf(readConsent(s)), 'granted');
-    saveConsent(false, s);
-    assert.equal(stateOf(readConsent(s)), 'denied');
-  });
-});
-
-describe('Contact links', () => {
-  test('email, phone and WhatsApp count; anything else does not', () => {
-    assert.equal(contactChannel('mailto:hola@marca.example'), 'email');
-    assert.equal(contactChannel('tel:+34600000000'), 'phone');
-    assert.equal(contactChannel('https://wa.me/34600000000?text=hola'), 'whatsapp');
-    assert.equal(contactChannel('https://api.whatsapp.com/send?phone=34600000000'), 'whatsapp');
-    for (const href of ['/privacidad', '#contacto', 'https://evilwhatsapp.com/x', 'https://wa.me.example/x', 'javascript:alert(1)', '']) assert.equal(contactChannel(href), null, href);
-    assert.match(CONTACT_LINKS, /mailto:.*tel:.*wa\.me\/.*whatsapp\.com\//);
+    assert.equal(keyOf(readConsent(s)), 'undecided');
+    assert.equal(choiceOf('undecided'), null);
+    for (const [analytics, ads, key] of [[true, true, 'a1-p1'], [true, false, 'a1-p0'], [false, true, 'a0-p1'], [false, false, 'a0-p0']]) {
+      saveConsent({ analytics, ads }, s);
+      assert.equal(keyOf(readConsent(s)), key);
+      assert.deepEqual(choiceOf(key), { analytics, ads });
+    }
   });
 });
 
@@ -174,69 +159,5 @@ describe('Lead fbc from the landing touch', () => {
     assert.equal(fbcFromTouch({ fbclid: 'IwAR0qacapitest01', occurred_at: '2030-01-01T00:00:00.000Z' }, now), `fb.1.${now}.IwAR0qacapitest01`);
     assert.equal(fbcFromTouch({ fbclid: 'IwAR0qacapitest01' }, now), `fb.1.${now}.IwAR0qacapitest01`);
     for (const t of [undefined, null, {}, { fbclid: 'short' }, { fbclid: 'bad value <script>' }, 'IwAR0qacapitest01']) assert.equal(fbcFromTouch(t, now), undefined);
-  });
-});
-
-const HOST = 'https://www.likinagency.com';
-
-describe('new events', () => {
-  test('standard events go with track, our own with trackCustom; Purchase still never leaves', () => {
-    const f = fakeHost();
-    const px = createMetaPixel('2270277029972714', () => f.host);
-    px.grant(null);
-    assert.equal(px.track('ViewContent', { content_name: 'SCALE' }, 'evt-view-0001'), true);
-    assert.equal(px.track('AbrirFormulario', { content_name: 'SCALE', cta: '/#hero' }, 'evt-open-0001'), true);
-    assert.equal(px.track('IrALikinAgency', { content_name: 'BUILD' }, 'evt-goto-0001'), true);
-    assert.equal(px.track('Purchase', {}, 'evt-buy-00002'), false);
-    assert.deepEqual(f.calls().slice(3), [
-      ['track', 'ViewContent', { content_name: 'SCALE' }, { eventID: 'evt-view-0001' }],
-      ['trackCustom', 'AbrirFormulario', { content_name: 'SCALE', cta: '/#hero' }, { eventID: 'evt-open-0001' }],
-      ['trackCustom', 'IrALikinAgency', { content_name: 'BUILD' }, { eventID: 'evt-goto-0001' }],
-    ]);
-  });
-  test('/api/meta-capi accepts the new browser events with cta, never Lead', async () => {
-    const sent = [];
-    const deps = { config: CFG, fetch: async (u, i) => { sent.push(JSON.parse(i.body)); return new Response('{"events_received":1}', { status: 200 }); } };
-    const req = (body) => new Request(`${HOST}/api/meta-capi`, { method: 'POST', headers: { host: new URL(HOST).host, origin: HOST, 'content-type': 'application/json', 'x-forwarded-for': '203.0.113.9' }, body: JSON.stringify(body) });
-    for (const name of ['ViewContent', 'InitiateCheckout', 'AbrirFormulario', 'PasoContacto', 'IrALikinAgency']) {
-      assert.equal((await handleBrowserEvent(req({ event_name: name, event_id: `evt-${name}-01`, event_source_url: `${HOST}/`, custom_data: { content_name: 'SCALE', cta: 'hero', qualification: 'HIGH_FIT' }, consent: true }), deps)).status, 204);
-    }
-    assert.deepEqual(sent.map((b) => b.data[0].event_name), ['ViewContent', 'InitiateCheckout', 'AbrirFormulario', 'PasoContacto', 'IrALikinAgency']);
-    assert.deepEqual(sent[2].data[0].custom_data, { content_name: 'SCALE', cta: 'hero' });
-    assert.equal((await handleBrowserEvent(req({ event_name: 'Lead', event_id: 'evt-lead-0101', event_source_url: `${HOST}/`, consent: true }), deps)).status, 400);
-  });
-});
-
-import { createFormEventMapper, metaEventFor, viewContentFor } from '../src/lib/meta.ts';
-import { qualificationOf } from '../src/lib/meta-capi-lead.ts';
-
-describe('likinagency events', () => {
-  test('ViewContent on the service pages and the cases, nowhere else', () => {
-    assert.deepEqual(viewContentFor('/escalar-ecommerce'), { content_name: 'SCALE', content_category: 'likinagency.com' });
-    assert.deepEqual(viewContentFor('/crear-tienda-online/'), { content_name: 'BUILD', content_category: 'likinagency.com' });
-    assert.deepEqual(viewContentFor('/work/bordando-hilos'), { content_name: 'caso/bordando-hilos', content_category: 'likinagency.com' });
-    for (const p of ['/', '/work', '/privacidad', '/work/a/b']) assert.equal(viewContentFor(p), null, p);
-  });
-  test('form events: AbrirFormulario with the button, PasoContacto, Schedule, InitiateCheckout; the rest stays out', () => {
-    assert.deepEqual(metaEventFor('qualification_form_opened', { service: 'SCALE', source: '/escalar-ecommerce#hero' }), { name: 'AbrirFormulario', data: { content_name: 'SCALE', content_category: 'likinagency.com', cta: '/escalar-ecommerce#hero' } });
-    assert.deepEqual(metaEventFor('qualification_contact_reached', { service: 'BUILD', qualification: 'READY' }), { name: 'PasoContacto', data: { content_name: 'BUILD', content_category: 'likinagency.com' } });
-    assert.deepEqual(metaEventFor('book_call_clicked', { service: 'SCALE' }), { name: 'Schedule', data: { content_name: 'SCALE', content_category: 'likinagency.com' } });
-    assert.deepEqual(metaEventFor('build_checkout_clicked', { service: 'BUILD' }), { name: 'InitiateCheckout', data: { content_name: 'BUILD', content_category: 'likinagency.com' } });
-    for (const e of ['qualification_started', 'qualification_step_completed', 'qualification_submitted', 'service_selected']) assert.equal(metaEventFor(e, { service: 'SCALE' }), null, e);
-  });
-  test('one PasoContacto per opened form, even if the last step is reached twice', () => {
-    const map = createFormEventMapper();
-    const names = [
-      ['qualification_form_opened', { service: 'SCALE' }],
-      ['qualification_contact_reached', { service: 'SCALE' }],
-      ['qualification_contact_reached', { service: 'SCALE' }],
-      ['qualification_form_opened', { service: 'BUILD' }],
-      ['qualification_contact_reached', { service: 'BUILD' }],
-    ].map(([e, p]) => map(e, p)?.name ?? null);
-    assert.deepEqual(names, ['AbrirFormulario', 'PasoContacto', null, 'AbrirFormulario', 'PasoContacto']);
-  });
-  test('the server Lead carries the qualification only when it is a known value', () => {
-    assert.deepEqual(qualificationOf({ qualification: 'HIGH_FIT' }), { qualification: 'HIGH_FIT' });
-    for (const q of [undefined, '', 'SUPER', 'high_fit', 3]) assert.deepEqual(qualificationOf({ qualification: q }), {});
   });
 });
