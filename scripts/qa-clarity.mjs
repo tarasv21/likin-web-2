@@ -45,7 +45,7 @@ try {
   const yes = await open(browser, BASE);
   check("el aviso nombra Microsoft Clarity", /Microsoft Clarity/.test(await yes.page.getByRole("region", { name: "Cookies" }).innerText()));
   check("nada de Clarity antes de decidir", yes.hits.length === 0 && !(await yes.page.evaluate(() => "clarity" in window)), String(yes.hits.length));
-  await decide(yes.page, "Aceptar");
+  await decide(yes.page, "Aceptar todas");
   const q = await queue(yes.page);
   check("al aceptar: señal de consentimiento (analítica sí, publicidad no) antes de nada", JSON.stringify(q[0]) === JSON.stringify(["consentv2", { ad_Storage: "denied", analytics_Storage: "granted" }]), JSON.stringify(q[0]));
   check(`al aceptar: el script de Clarity una vez, con ${ID}`, yes.hits.filter((u) => u.includes(`/tag/${ID}`)).length === 1, yes.hits.join(" "));
@@ -62,20 +62,20 @@ try {
     document.querySelector("dialog[open]")?.close();
   });
   await yes.page.getByRole("button", { name: "Configurar cookies" }).first().click();
-  await decide(yes.page, "Rechazar");
+  await decide(yes.page, "Rechazar todas");
   const tail = (await queue(yes.page)).slice(-2);
   const left = (await yes.ctx.cookies()).filter((c) => c.name.startsWith("_cl")).map((c) => c.name);
   check("retirar: sin consentimiento para Clarity y cookies _clck/_clsk borradas", JSON.stringify(tail) === JSON.stringify([["consentv2", { ad_Storage: "denied", analytics_Storage: "denied" }], ["consent", false]]) && left.length === 0, `${JSON.stringify(tail)} ${left}`);
   await yes.ctx.close();
 
   const no = await open(browser, BASE);
-  await decide(no.page, "Rechazar");
+  await decide(no.page, "Rechazar todas");
   await no.page.goto(`${BASE}/privacidad`, { waitUntil: "networkidle" });
   check("rechaza: nada de Clarity en toda la visita", no.hits.length === 0, String(no.hits.length));
   await no.ctx.close();
 
   const local = await open(browser, `http://localhost:${PORT}`);
-  await decide(local.page, "Aceptar");
+  await decide(local.page, "Aceptar todas");
   check("otro dominio (local o previews): aunque acepten, Clarity no carga", local.hits.length === 0, String(local.hits.length));
   await local.ctx.close();
 } catch (e) {

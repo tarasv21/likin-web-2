@@ -47,7 +47,7 @@ try {
   const banner = await yes.page.getByRole("region", { name: "Cookies" }).innerText();
   check("el aviso nombra Google Analytics y Meta", /Google Analytics/.test(banner) && /Meta/.test(banner));
   check("nada de Google antes de decidir", yes.google.length === 0 && !(await layer(yes.page)).some((c) => Array.isArray(c) && c[0] === "config"), String(yes.google.length));
-  await decide(yes.page, "Aceptar");
+  await decide(yes.page, "Aceptar todas");
   const loads = yes.google.filter((u) => u.includes(`gtag/js?id=${ID}`));
   check(`al aceptar, gtag.js una vez con ${ID}`, loads.length === 1, yes.google.join(" "));
   const dl = (await layer(yes.page)).filter(Array.isArray);
@@ -66,7 +66,7 @@ try {
     document.cookie = `_ga_${sfx}=GS1.1.789; path=/; domain=.${root}`;
   }, [ROOT, suffix]);
   await yes.page.getByRole("button", { name: "Configurar cookies" }).first().click();
-  await decide(yes.page, "Rechazar");
+  await decide(yes.page, "Rechazar todas");
   const disabled = await yes.page.evaluate((id) => window[`ga-disable-${id}`] === true, ID);
   const last = (await layer(yes.page)).filter(Array.isArray).at(-1);
   const cookies = (await yes.ctx.cookies()).map((c) => c.name).filter((n) => n.startsWith("_ga"));
@@ -74,14 +74,14 @@ try {
   await yes.ctx.close();
 
   const no = await open(browser, BASE);
-  await decide(no.page, "Rechazar");
+  await decide(no.page, "Rechazar todas");
   await no.page.goto(`${BASE}${NEXT}`, { waitUntil: "networkidle" }).catch(() => undefined);
   await wait(1500);
   check("rechaza: nada de Google en toda la visita", no.google.length === 0, String(no.google.length));
   await no.ctx.close();
 
   const local = await open(browser, `http://localhost:${PORT}`);
-  await decide(local.page, "Aceptar");
+  await decide(local.page, "Aceptar todas");
   check("otro dominio (local o previews): aunque acepten, GA no carga", local.google.length === 0, String(local.google.length));
   await local.ctx.close();
 } catch (e) {

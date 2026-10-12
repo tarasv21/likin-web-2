@@ -1,13 +1,18 @@
 /**
- * QA local de punta a punta web → LIKIN CRM (DEV) con datos ficticios. Nada sale hacia Resend ni Meta
- * (qa-net-recorder.mjs lo responde en local); el lead SÍ entra en el CRM de DEV.
- *   CRM (repo likin-crm, .env.local de DEV): npx next build && npx next start -p 3000
+ * QA local de punta a punta web → LIKIN CRM con datos ficticios. Nada sale hacia Resend ni Meta
+ * (qa-net-recorder.mjs lo responde en local). El CRM corre en local en modo simulado (sin Supabase:
+ * ni DEV ni PROD) con una clave de prueba de esta web, solo en el entorno de los dos procesos:
+ *   CRM (repo likin-crm): CRM_DATA_MODE=mock SUPABASE_URL= SUPABASE_PUBLISHABLE_KEY= SUPABASE_SECRET_KEY= \
+ *        SUPABASE_DB_URL= CRM_INGEST_PROOF= CRM_INGEST_WEB_KEYS= CRM_INGEST_WEB_KEYS_LIKINAGENCY=<site:keyId:secret> \
+ *        npx next dev -p 3010
  *   Web: npx next build && NODE_OPTIONS="--import ./scripts/qa-net-recorder.mjs" QA_NET_RECORD=/tmp/lk-crm/net.jsonl \
- *        RESEND_API_KEY=local LEAD_EMAIL_FROM="LIKIN Web <web@likinagency.com>" LEAD_EMAIL_ALWAYS=1 npx next start -p 3300
- *        (CRM_INGEST_URL/KEY_ID/SECRET de .env.local, la clave de DEV de esta web)
- *   node scripts/qa-crm.mjs /tmp/lk-crm   → luego, en likin-crm: npm run ingest:verify -- <email que imprime>
- * Comprueba: el servidor responde channel "crm"; doble clic = un envío; un solo email, que dice
- * «registrado» y lleva el JSON del lead; reenviar el mismo lead no duplica (duplicate).
+ *        RESEND_API_KEY=local LEAD_EMAIL_FROM="LIKIN Web <web@likinagency.com>" LEAD_EMAIL_ALWAYS=1 \
+ *        CRM_INGEST_URL=http://localhost:3010/api/ingest/web CRM_INGEST_KEY_ID=<keyId> CRM_INGEST_SECRET=<secret> npx next start -p 3300
+ *        (las variables del proceso mandan sobre .env.local)
+ *   node scripts/qa-crm.mjs /tmp/lk-crm
+ * Comprueba: el servidor responde channel "crm"; doble clic = un envío; un solo email
+ * (LEAD_EMAIL_ALWAYS=1), que dice «registrado» y lleva el JSON del lead; reenviar el mismo lead no
+ * duplica; con el CRM caído, el lead llega igual por email (QA_CRM_DOWN=1, tras parar el CRM).
  */
 import { chromium } from "playwright-core";
 import { existsSync, readFileSync } from "node:fs";
@@ -86,10 +91,18 @@ try {
   const leadRequests = [];
   page.on("request", (r) => { if (new URL(r.url()).pathname === "/api/lead") leadRequests.push(r.postData() ?? ""); });
   await page.goto(`${BASE}/escalar-ecommerce?utm_source=meta&utm_medium=paid_social&utm_campaign=e2e_crm&utm_id=120200&fbclid=IwAR0e2ecrmtest01`, { waitUntil: "networkidle" });
-  await page.getByRole("region", { name: "Cookies" }).getByRole("button", { name: "Rechazar" }).click();
+  await page.getByRole("region", { name: "Cookies" }).getByRole("button", { name: "Rechazar todas" }).click();
   await page.goto(`${BASE}/escalar-ecommerce`, { waitUntil: "networkidle" });
   const before = net().length;
   const sent = await completeScale(page);
+  if (process.env.QA_CRM_DOWN === "1") {
+    // The CRM is stopped: the visitor still sees the request as sent and the e-mail is the only copy.
+    check("CRM caído: el servidor confirma el lead por email", sent.status === 200 && sent.body.stored === true && sent.body.channel === "email", JSON.stringify(sent.body));
+    const down = net().slice(before).filter((r) => r.to === "api.resend.com");
+    check("CRM caído: un email «NO REGISTRADO … única copia» con el JSON del lead para importarlo", down.length === 1 && /NO REGISTRADO/.test(down[0].body.text) && /única copia/.test(down[0].body.text) && /^lead-lead_.+\.json$/.test(down[0].body.attachments?.[0]?.filename ?? ""), down[0]?.body.subject);
+    await ctx.close();
+    throw Object.assign(new Error("done"), { done: true });
+  }
   check("el servidor confirma el lead EN EL CRM", sent.status === 200 && sent.body.stored === true && sent.body.channel === "crm", JSON.stringify(sent.body));
   check("doble clic = un solo envío", leadRequests.length === 1, String(leadRequests.length));
   const mails = net().slice(before).filter((r) => r.to === "api.resend.com");
@@ -97,11 +110,12 @@ try {
   // Reenviar exactamente la misma solicitud (como un reintento tras perder la respuesta): el CRM no duplica.
   const again = await page.evaluate(async (body) => { const r = await fetch("/api/lead", { method: "POST", headers: { "content-type": "application/json" }, body }); return r.json(); }, leadRequests[0]);
   check("reenviar el mismo lead: sigue en el CRM, sin duplicar", again.stored === true && again.channel === "crm", JSON.stringify(again));
-  console.log(`\nEmail ficticio del lead: ${EMAIL}`);
   await ctx.close();
 } catch (e) {
-  failures++;
-  console.log(`✗ la QA se ha detenido: ${e.message.split("\n")[0]}`);
+  if (!e.done) {
+    failures++;
+    console.log(`✗ la QA se ha detenido: ${e.message.split("\n")[0]}`);
+  }
 } finally {
   await browser.close();
   console.log(failures ? `\n${failures} fallo(s)` : "\nTodo correcto");
