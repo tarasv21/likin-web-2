@@ -1,8 +1,9 @@
 /**
  * Data of the legal pages (/aviso-legal, /privacidad, /cookies and the line under the form).
  * Identity data given by Taras on 2026-10-10; retention and international transfers approved by
- * Taras on 2026-10-11 (docs/LEGAL_REVIEW.md). Change the texts only with his approval, and bump
- * `policyVersion` and `updated` when they change.
+ * Taras on 2026-10-11 (docs/LEGAL_REVIEW.md). The 2026-10-12 update (cookies by purpose, Meta with
+ * PageView and Lead only, GitHub backups) is pending Taras's approval. Change the texts only with his
+ * approval, and bump `policyVersion` and `updated` when they change.
  */
 export const legal = {
   /** Titular del sitio y responsable del tratamiento (persona física). */
@@ -20,7 +21,7 @@ export const legal = {
   /** Plazos de conservación (propuesta de docs/LEGAL_REVIEW.md §3, aprobada por Taras el 2026-10-11). */
   retention: [
     "Tu solicitud (en nuestro CRM y en el correo): mientras la gestionamos. Si no llega a haber relación comercial, la borramos a los 24 meses desde el último contacto. Si se convierte en un encargo, la conservamos durante los plazos que exija la ley.",
-    "Las copias técnicas que guardan nuestros proveedores (por ejemplo, Resend y Vercel) se conservan según los plazos de cada uno.",
+    "Las copias de seguridad cifradas del CRM se borran solas a los 30 días (las semanales, a los 90). Las copias técnicas que guardan nuestros proveedores (por ejemplo, Resend y Vercel) se conservan según los plazos de cada uno.",
     "Tu decisión sobre las cookies se guarda en tu navegador y te la volvemos a pedir a los 12 meses. Cómo llegaste a la web se guarda hasta que cierras la pestaña. Lo que reciben Meta, Google Analytics y Microsoft Clarity se rige por sus propias políticas (en Google Analytics, también por el plazo de conservación configurado en la cuenta; en Clarity, 30 días las grabaciones y 13 meses los mapas de calor).",
   ],
   /** Transferencias internacionales y su garantía, proveedor por proveedor (decisión de Taras, 2026-10-11). */
@@ -31,6 +32,7 @@ export const legal = {
     "Vercel (Vercel Inc., Estados Unidos): las funciones de la web se ejecutan en Fráncfort (Alemania); para lo que trate en Estados Unidos, Vercel está certificada en el Data Privacy Framework.",
     "Google (Google Workspace y Google Analytics): los datos pueden tratarse en Estados Unidos por Google LLC, certificada en el Data Privacy Framework.",
     "Microsoft (Microsoft Clarity): los datos pueden tratarse en Estados Unidos por Microsoft Corporation, certificada en el Data Privacy Framework.",
+    "GitHub (GitHub, Inc., Estados Unidos): las copias de seguridad del CRM se hacen en sus servidores y se guardan cifradas con una clave que solo tenemos nosotros; GitHub está certificada en el Data Privacy Framework.",
     "Supabase (Supabase Pte. Ltd., Singapur): la base de datos del CRM está en Fráncfort (Alemania); para los accesos de Supabase desde fuera del Espacio Económico Europeo (por ejemplo, de soporte), la garantía son las cláusulas contractuales tipo de la Comisión Europea incluidas en su contrato de encargo.",
   ],
   /**
