@@ -1,10 +1,11 @@
 /**
  * Data of the legal pages (/aviso-legal, /privacidad, /cookies and the line under the form).
  * Identity data given by Taras on 2026-10-10; retention and international transfers approved by
- * Taras on 2026-10-11 (docs/LEGAL_REVIEW.md). The 2026-10-12 update (cookies by purpose, Meta with
- * PageView and Lead only, GitHub backups, art. 6.1.b for requests, providers checked against their
- * DPAs and privacy notices) is pending Taras's approval. Change the texts only with his approval, and
- * bump `policyVersion` and `updated` when they change.
+ * Taras on 2026-10-11. The 2026-10-12 update (cookies by purpose, Meta with PageView and Lead only,
+ * GitHub backups, art. 6.1.b for requests, providers checked against their DPAs and privacy notices)
+ * was approved by Taras on 2026-10-12; no professional legal review yet (open points:
+ * docs/LEGAL_OPEN_POINTS.md). Change the texts only with his approval, and bump `policyVersion` and
+ * `updated` when they change.
  */
 export const legal = {
   /** Titular del sitio y responsable del tratamiento (persona física). */
