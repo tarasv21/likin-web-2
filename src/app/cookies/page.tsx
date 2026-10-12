@@ -29,7 +29,7 @@ export default function Page() {
           h: "Analítica: Microsoft Clarity (solo si aceptas la analítica)",
           p: [
             "Usamos Microsoft Clarity, de Microsoft, para ver de forma agregada cómo se usa la web: dónde se hace clic, hasta dónde se baja y dónde se atasca la gente (mapas de calor y grabaciones de la navegación). Lo que escribes o eliges en el formulario no se graba: está oculto para Clarity. Sin las funciones publicitarias de Microsoft.",
-            "Instala en likinagency.com las cookies _clck (distingue tu navegador, 1 año) y _clsk (une las páginas de una misma visita, 1 día). Microsoft puede usar además sus propias cookies en sus dominios, según su declaración de privacidad (privacy.microsoft.com). Las grabaciones se conservan 30 días y los mapas de calor, 13 meses.",
+            "Instala en likinagency.com las cookies _clck (distingue tu navegador, 1 año) y _clsk (une las páginas de una misma visita, 1 día). Microsoft trata estos datos como responsable y puede usar además sus propias cookies en sus dominios, según su declaración de privacidad (privacy.microsoft.com). Las grabaciones se conservan 30 días; los mapas de calor y las grabaciones que marquemos, 9 meses.",
           ],
         },
         {
@@ -39,7 +39,7 @@ export default function Page() {
             "Visita de página: la dirección de cada página que visitas (completa, con los parámetros de campaña y el identificador del clic si vienes de un anuncio) y la página de la que vienes.",
             "Solicitud enviada: el aviso de que has enviado el formulario, con el tipo de servicio que pides (BUILD o SCALE), solo cuando la solicitud se ha recibido.",
             "Con cada evento van un identificador del evento (para que no se cuente dos veces), los identificadores de las cookies de Meta y datos técnicos de tu conexión y navegador, como la dirección IP. Nunca tu nombre, tu email, tu teléfono, tus respuestas ni la valoración que calcula el formulario.",
-            "Instala en likinagency.com las cookies _fbp (identifica tu navegador ante Meta, 90 días) y, si llegaste desde un anuncio de Meta, _fbc (guarda el identificador de ese clic, 90 días). Meta puede usar además sus propias cookies en sus dominios, según su política de privacidad (facebook.com/privacy/policy).",
+            "Instala en likinagency.com las cookies _fbp (identifica tu navegador ante Meta, 90 días) y, si llegaste desde un anuncio de Meta, _fbc (guarda el identificador de ese clic, 90 días). Para recoger y enviar estos datos, Meta Platforms Ireland y nosotros somos corresponsables; lo que Meta hace después lo decide Meta, que puede usar además sus propias cookies en sus dominios, según su política de privacidad (facebook.com/privacy/policy).",
           ],
         },
         {

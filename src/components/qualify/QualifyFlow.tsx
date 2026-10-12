@@ -194,7 +194,7 @@ export function QualifyFlow({ service, source, onClose, onSwitchToBuild }: { ser
     if (!EMAIL.test(contact.email.trim())) e.email = "Revisa el email.";
     if (!PHONE.test(contact.phone.trim())) e.phone = "Revisa el teléfono. Puedes incluir el prefijo internacional.";
     if (contact.brand_name.trim().length < 2) e.brand_name = "Falta el nombre de la marca.";
-    if (!contact.consent_contact) e.consent_contact = "Necesitamos tu permiso para responderte.";
+    if (!contact.consent_contact) e.consent_contact = "Marca la casilla para enviarnos tu solicitud.";
     setContactErrors(e);
     if (Object.keys(e).length) {
       // Never leave someone staring at a button that does nothing: go to the first problem.
@@ -321,16 +321,16 @@ export function QualifyFlow({ service, source, onClose, onSwitchToBuild }: { ser
 
                 <div className="grid gap-3 border-t border-hairline pt-5">
                   <Consent checked={contact.consent_contact} onChange={(v) => setContact({ ...contact, consent_contact: v })} error={contactErrors.consent_contact}>
-                    Acepto que LIKIN Agency trate mis datos para responder a esta solicitud, según la{" "}
+                    He leído la{" "}
                     <a href="/privacidad" target="_blank" rel="noopener" className="text-cloud underline underline-offset-2 hover:text-teal">
                       política de privacidad
-                    </a>
-                    .
+                    </a>{" "}
+                    y quiero que LIKIN Agency estudie mi solicitud y me responda.
                   </Consent>
                   <Consent checked={contact.consent_nurture} onChange={(v) => setContact({ ...contact, consent_nurture: v })}>
                     Quiero recibir también contenidos y novedades de LIKIN Agency. <span className="text-steel">Opcional.</span>
                   </Consent>
-                  <p className="text-xs leading-relaxed text-steel">Responsable: {legal.holder} ({legal.tradeName}). Finalidad: valorar tu proyecto y responderte. Derechos: acceso, rectificación, supresión y otros en {site.email}. Más información en la política de privacidad.</p>
+                  <p className="text-xs leading-relaxed text-steel">Responsable: {legal.holder} ({legal.tradeName}). Finalidad: valorar tu proyecto y responderte. Legitimación: tu solicitud (medidas precontractuales). Derechos: acceso, rectificación, supresión y otros en {site.email}. Más información en la política de privacidad.</p>
                 </div>
 
                 {/* Honeypot. Off-screen, never announced, never focusable. */}
