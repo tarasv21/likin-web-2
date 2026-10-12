@@ -110,6 +110,8 @@ try {
   // Reenviar exactamente la misma solicitud (como un reintento tras perder la respuesta): el CRM no duplica.
   const again = await page.evaluate(async (body) => { const r = await fetch("/api/lead", { method: "POST", headers: { "content-type": "application/json" }, body }); return r.json(); }, leadRequests[0]);
   check("reenviar el mismo lead: sigue en el CRM, sin duplicar", again.stored === true && again.channel === "crm", JSON.stringify(again));
+  const keys = new Set(net().slice(before).filter((r) => r.to === "api.resend.com").map((r) => r.idempotencyKey));
+  check("reenviar el mismo lead: la misma clave de idempotencia en Resend (un solo email)", keys.size === 1 && Boolean([...keys][0]), [...keys].join(" | "));
   await ctx.close();
 } catch (e) {
   if (!e.done) {
