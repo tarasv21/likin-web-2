@@ -28,7 +28,7 @@ const JOURNEYS: Journey[] = [
   {
     name: "BUILD · ERP y más de 100 productos",
     service: "BUILD",
-    answers: { build_situation: "HAS_STORE", build_platform: "WOOCOMMERCE", build_store_url: "tienda.com", product_category: "HOME", brand_name: "Marca", brand_link: "marca.com", product_count: "100_PLUS", build_complexity: ["ERP", "B2B"], build_readiness: ["BRAND", "PHOTOS"], build_budget: "HIGHER", timing: "NOW", build_collaboration: "YES", business_role: "FOUNDER" },
+    answers: { build_situation: "HAS_STORE", build_platform: "WOOCOMMERCE", build_store_url: "tienda.com", product_category: "HOME", brand_name: "Marca", product_count: "100_PLUS", build_complexity: ["ERP", "B2B"], build_readiness: ["BRAND", "PHOTOS"], build_budget: "HIGHER", timing: "NOW", build_collaboration: "YES", business_role: "FOUNDER" },
     expect: { qualification: "REVIEW", next_action: "MANUAL_REVIEW" },
     also: (v) => (v.requires_manual_review ? null : "requires_manual_review debería ser true"),
   },
@@ -49,13 +49,13 @@ const JOURNEYS: Journey[] = [
   {
     name: "SCALE · 25-50K, ads 3-10K, crecimiento completo, 2,5-4K, fundador, ya",
     service: "SCALE",
-    answers: { monthly_revenue: "25K_50K", platform: "SHOPIFY", store_url: "tienda.com", product_category: "FASHION", brand_name: "Marca", brand_link: "marca.com", main_bottlenecks: ["ADS_NOT_SCALING", "LOW_CONVERSION"], paid_media: "YES", monthly_ad_spend: "3K_10K", ads_managed_by: "AGENCY", cac_clarity: "YES", conversion_rate: "1_2", retention: "SOME", email_tool: "KLAVIYO", growth_team: ["FOUNDER", "AGENCY"], services_interested: ["FULL_GROWTH"], investment_capacity: "2_5K_4K", timing: "NOW", change_capacity: "YES", business_role: "FOUNDER" },
+    answers: { monthly_revenue: "25K_50K", platform: "SHOPIFY", store_url: "tienda.com", product_category: "FASHION", brand_name: "Marca", main_bottlenecks: ["ADS_NOT_SCALING", "LOW_CONVERSION"], paid_media: "YES", monthly_ad_spend: "3K_10K", ads_managed_by: "AGENCY", cac_clarity: "YES", conversion_rate: "1_2", retention: "SOME", email_tool: "KLAVIYO", growth_team: ["FOUNDER", "AGENCY"], services_interested: ["FULL_GROWTH"], investment_capacity: "2_5K_4K", timing: "NOW", change_capacity: "YES", business_role: "FOUNDER" },
     expect: { qualification: "HIGH_FIT", next_action: "BOOK_CALL" },
   },
   {
     name: "SCALE · 5-10K, ads menos de 1K, inversión 1-1,5K",
     service: "SCALE",
-    answers: { monthly_revenue: "5K_10K", platform: "SHOPIFY", store_url: "tienda.com", product_category: "HOME", brand_name: "Marca", brand_link: "marca.com", main_bottlenecks: ["MORE_CUSTOMERS"], paid_media: "YES", monthly_ad_spend: "LT_1K", ads_managed_by: "INTERNAL", cac_clarity: "ROUGHLY", conversion_rate: "1_2", retention: "BARELY", email_tool: "MAILCHIMP", growth_team: ["FOUNDER"], services_interested: ["PAID_MEDIA"], investment_capacity: "1K_1_5K", timing: "30_DAYS", change_capacity: "DEPENDS", business_role: "FOUNDER" },
+    answers: { monthly_revenue: "5K_10K", platform: "SHOPIFY", store_url: "tienda.com", product_category: "HOME", brand_name: "Marca", main_bottlenecks: ["MORE_CUSTOMERS"], paid_media: "YES", monthly_ad_spend: "LT_1K", ads_managed_by: "INTERNAL", cac_clarity: "ROUGHLY", conversion_rate: "1_2", retention: "BARELY", email_tool: "MAILCHIMP", growth_team: ["FOUNDER"], services_interested: ["PAID_MEDIA"], investment_capacity: "1K_1_5K", timing: "30_DAYS", change_capacity: "DEPENDS", business_role: "FOUNDER" },
     expect: { qualification: "REVIEW", next_action: "MANUAL_REVIEW" },
   },
   {
@@ -68,21 +68,21 @@ const JOURNEYS: Journey[] = [
   {
     name: "SCALE · 50-100K, fijo más variable, ads 10-30K",
     service: "SCALE",
-    answers: { monthly_revenue: "50K_100K", platform: "SHOPIFY", store_url: "tienda.com", product_category: "BEAUTY", brand_name: "Marca", brand_link: "marca.com", main_bottlenecks: ["ADS_NOT_SCALING"], paid_media: "YES", monthly_ad_spend: "10K_30K", ads_managed_by: "AGENCY", cac_clarity: "YES", conversion_rate: "2_3", retention: "ACTIVE", email_tool: "KLAVIYO", growth_team: ["INTERNAL_MARKETING", "MEDIA_BUYER"], services_interested: ["FULL_GROWTH"], investment_capacity: "FIXED_VARIABLE", variable_model_metric: "REVENUE_GROWTH", timing: "NOW", change_capacity: "YES", business_role: "FOUNDER" },
+    answers: { monthly_revenue: "50K_100K", platform: "SHOPIFY", store_url: "tienda.com", product_category: "BEAUTY", brand_name: "Marca", main_bottlenecks: ["ADS_NOT_SCALING"], paid_media: "YES", monthly_ad_spend: "10K_30K", ads_managed_by: "AGENCY", cac_clarity: "YES", conversion_rate: "2_3", retention: "ACTIVE", email_tool: "KLAVIYO", growth_team: ["INTERNAL_MARKETING", "MEDIA_BUYER"], services_interested: ["FULL_GROWTH"], investment_capacity: "FIXED_VARIABLE", variable_model_metric: "REVENUE_GROWTH", timing: "NOW", change_capacity: "YES", business_role: "FOUNDER" },
     expect: { qualification: "HIGH_FIT", next_action: "BOOK_CALL" },
     also: (v, a) => (a.variable_model_metric === "REVENUE_GROWTH" && pricingModelOf(a) === "FIXED_VARIABLE" ? null : "no se ha capturado la métrica variable"),
   },
   {
     name: "SCALE · alta facturación pero solo a variable",
     service: "SCALE",
-    answers: { monthly_revenue: "GT_100K", platform: "SHOPIFY", store_url: "tienda.com", product_category: "FASHION", brand_name: "Marca", brand_link: "marca.com", main_bottlenecks: ["ADS_NOT_SCALING"], paid_media: "YES", monthly_ad_spend: "GT_30K", ads_managed_by: "AGENCY", cac_clarity: "YES", conversion_rate: "2_3", retention: "ACTIVE", email_tool: "KLAVIYO", growth_team: ["MEDIA_BUYER"], services_interested: ["PAID_MEDIA"], investment_capacity: "VARIABLE_ONLY", variable_model_metric: "PROFIT", timing: "NOW", change_capacity: "YES", business_role: "FOUNDER" },
+    answers: { monthly_revenue: "GT_100K", platform: "SHOPIFY", store_url: "tienda.com", product_category: "FASHION", brand_name: "Marca", main_bottlenecks: ["ADS_NOT_SCALING"], paid_media: "YES", monthly_ad_spend: "GT_30K", ads_managed_by: "AGENCY", cac_clarity: "YES", conversion_rate: "2_3", retention: "ACTIVE", email_tool: "KLAVIYO", growth_team: ["MEDIA_BUYER"], services_interested: ["PAID_MEDIA"], investment_capacity: "VARIABLE_ONLY", variable_model_metric: "PROFIT", timing: "NOW", change_capacity: "YES", business_role: "FOUNDER" },
     expect: { qualification: "REVIEW", next_action: "MANUAL_REVIEW" },
     also: (v, a) => (v.requires_manual_review && pricingModelOf(a) === "VARIABLE" ? null : "debería ir a revisión manual, no rechazo automático"),
   },
   {
     name: "SCALE · solo Ads reduce el encaje aunque el resto sea bueno",
     service: "SCALE",
-    answers: { monthly_revenue: "50K_100K", platform: "SHOPIFY", store_url: "tienda.com", product_category: "FASHION", brand_name: "Marca", brand_link: "marca.com", main_bottlenecks: ["ADS_NOT_SCALING"], paid_media: "YES", monthly_ad_spend: "10K_30K", ads_managed_by: "AGENCY", cac_clarity: "YES", conversion_rate: "2_3", retention: "ACTIVE", email_tool: "KLAVIYO", growth_team: ["MEDIA_BUYER"], services_interested: ["PAID_MEDIA"], investment_capacity: "GT_4K", timing: "NOW", change_capacity: "ADS_ONLY", business_role: "FOUNDER" },
+    answers: { monthly_revenue: "50K_100K", platform: "SHOPIFY", store_url: "tienda.com", product_category: "FASHION", brand_name: "Marca", main_bottlenecks: ["ADS_NOT_SCALING"], paid_media: "YES", monthly_ad_spend: "10K_30K", ads_managed_by: "AGENCY", cac_clarity: "YES", conversion_rate: "2_3", retention: "ACTIVE", email_tool: "KLAVIYO", growth_team: ["MEDIA_BUYER"], services_interested: ["PAID_MEDIA"], investment_capacity: "GT_4K", timing: "NOW", change_capacity: "ADS_ONLY", business_role: "FOUNDER" },
     expect: { qualification: "REVIEW" },
   },
 ];

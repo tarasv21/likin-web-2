@@ -90,7 +90,6 @@ async function completeScale(page) {
   await page.getByLabel("Nombre y apellidos").fill("Lucía Prueba Meta");
   await page.getByLabel("Email profesional").fill("Lucia.QA@lk-meta.example");
   await page.getByLabel("Teléfono o WhatsApp").fill("600 000 444");
-  await page.getByLabel("Empresa o marca").fill("Marca Meta QA");
   // Mobile fix: the consent box must be reachable inside the sheet (its own scroll region).
   const consent = page.locator("dialog[open] input[type=checkbox]").first();
   await consent.scrollIntoViewIfNeeded();

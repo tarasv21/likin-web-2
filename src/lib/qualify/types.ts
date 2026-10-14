@@ -6,7 +6,8 @@
  * score, reasons, next action) is recomputed from the answers, never stored by the UI.
  */
 
-export const FORM_VERSION = "2026-09-qualify-1";
+/** 2026-10-qualify-2: «¿Dónde podemos verla?» only when no store URL was asked; the contact step no longer asks the brand again. */
+export const FORM_VERSION = "2026-10-qualify-2";
 
 export type Service = "BUILD" | "SCALE";
 

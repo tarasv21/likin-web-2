@@ -193,7 +193,6 @@ export function QualifyFlow({ service, source, onClose, onSwitchToBuild }: { ser
     if (contact.contact_name.trim().length < 2) e.contact_name = "Dinos cómo te llamas.";
     if (!EMAIL.test(contact.email.trim())) e.email = "Revisa el email.";
     if (!PHONE.test(contact.phone.trim())) e.phone = "Revisa el teléfono. Puedes incluir el prefijo internacional.";
-    if (contact.brand_name.trim().length < 2) e.brand_name = "Falta el nombre de la marca.";
     if (!contact.consent_contact) e.consent_contact = "Marca la casilla para enviarnos tu solicitud.";
     setContactErrors(e);
     if (Object.keys(e).length) {
@@ -311,9 +310,6 @@ export function QualifyFlow({ service, source, onClose, onSwitchToBuild }: { ser
                 </LabelledField>
                 <LabelledField label="Teléfono o WhatsApp" error={contactErrors.phone}>
                   {(id, d) => <input id={id} aria-describedby={d} type="tel" inputMode="tel" autoComplete="tel" placeholder="+34 600 000 000" value={contact.phone} onChange={(e) => setContact({ ...contact, phone: e.target.value })} className={inputCls(contactErrors.phone)} />}
-                </LabelledField>
-                <LabelledField label="Empresa o marca" error={contactErrors.brand_name}>
-                  {(id, d) => <input id={id} aria-describedby={d} autoComplete="organization" value={contact.brand_name} onChange={(e) => setContact({ ...contact, brand_name: e.target.value })} className={inputCls(contactErrors.brand_name)} />}
                 </LabelledField>
                 <LabelledField label="¿Algo que deberíamos saber antes de hablar?" hint="Opcional.">
                   {(id, d) => <textarea id={id} aria-describedby={d} rows={3} value={contact.additional_notes} onChange={(e) => setContact({ ...contact, additional_notes: e.target.value })} className={cn(inputCls(), "h-auto py-3 leading-relaxed")} />}

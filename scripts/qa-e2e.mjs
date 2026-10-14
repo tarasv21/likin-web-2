@@ -91,7 +91,6 @@ async function submit(page, service, name, email, brand) {
   await page.getByLabel("Nombre y apellidos").fill(name);
   await page.getByLabel("Email profesional").fill(email);
   await page.getByLabel("Teléfono o WhatsApp").fill("+44 7700 900123");
-  await page.getByLabel("Empresa o marca").fill(brand);
   const box = page.locator("dialog[open] input[type=checkbox]").first();
   await box.scrollIntoViewIfNeeded();
   await box.click();

@@ -15,6 +15,8 @@ const has = (a: Answers, id: string, ...values: string[]) => {
 };
 
 const str = (v: unknown) => (typeof v === "string" ? v.trim() : "");
+/** The flow asks for the store's URL: SCALE when already selling, BUILD when there is a store to redo. */
+const hasStoreUrlQuestion = (a: Answers) => has(a, "build_situation", "HAS_STORE") || (typeof a.monthly_revenue === "string" && !has(a, "monthly_revenue", "NONE"));
 
 /** Accepts a bare domain, a full URL or an @handle. Returns null when usable. */
 const looksLikeLink = (raw: string) => {
@@ -78,6 +80,8 @@ const common: Question[] = [
     prompt: "¿Dónde podemos verla?",
     help: "Tu web o tu Instagram. Lo miramos antes de hablar contigo.",
     placeholder: "tumarca.com o @tumarca",
+    // Not asked twice: whoever already gave the URL of their store (SCALE selling, BUILD with a store) skips it.
+    when: (a) => !hasStoreUrlQuestion(a),
     validate: (v) => looksLikeLink(str(v)),
   },
   {

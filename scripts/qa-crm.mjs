@@ -68,7 +68,6 @@ async function completeScale(page) {
   await page.getByLabel("Nombre y apellidos").fill(NAME);
   await page.getByLabel("Email profesional").fill(EMAIL);
   await page.getByLabel("Teléfono o WhatsApp").fill("600 000 444");
-  await page.getByLabel("Empresa o marca").fill("Marca E2E CRM");
   // Mobile fix: the consent box must be reachable inside the sheet (its own scroll region).
   const consent = page.locator("dialog[open] input[type=checkbox]").first();
   await consent.scrollIntoViewIfNeeded();

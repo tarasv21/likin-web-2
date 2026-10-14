@@ -128,7 +128,9 @@ export function toLeadInput(lead: Lead, opts: { fallbackEventId: string; fallbac
     typeof lead.qualification === "string" && QUALIFICATIONS.has(lead.qualification) && typeof lead.lead_score === "number" && lead.lead_score >= 0 && lead.lead_score <= 100
       ? { qualification: lead.qualification, leadScore: lead.lead_score }
       : undefined;
-  const brandLink = typeof answers.brand_link === "string" ? answers.brand_link.slice(0, 300) : undefined;
+  // The brand's link, or the store's URL when the flow asked that instead (form 2026-10-qualify-2).
+  const linkAnswer = [answers.brand_link, answers.store_url, answers.build_store_url].find((v): v is string => typeof v === "string" && v.trim() !== "");
+  const brandLink = linkAnswer?.slice(0, 300);
   return {
     schema: LEAD_INPUT_SCHEMA,
     source: "web",
