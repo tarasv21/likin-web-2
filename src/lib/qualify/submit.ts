@@ -52,7 +52,8 @@ export function buildLead({ service, answers, verdict, attribution, contact }: {
 
     intent: service === "BUILD" ? one(answers, "build_situation") : many(answers, "services_interested")?.join(","),
 
-    brand_name: contact?.brand_name || one(answers, "brand_name"),
+    // Asked once, as a question (form 2026-10-qualify-2): the answer wins, also when changed after reaching the contact step.
+    brand_name: one(answers, "brand_name") ?? (contact?.brand_name || undefined),
     ...link,
     website: one(answers, "store_url") ?? one(answers, "build_store_url") ?? link.website,
     business_role: one(answers, "business_role"),

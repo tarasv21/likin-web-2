@@ -9,6 +9,7 @@ import assert from "node:assert/strict";
 import { visibleQuestions, pruneAnswers } from "../src/lib/qualify/flow.ts";
 import { FORM_VERSION } from "../src/lib/qualify/types.ts";
 import { toLeadInput } from "../src/lib/crm/canonical.ts";
+import { buildLead } from "../src/lib/qualify/submit.ts";
 
 const ids = (service, answers) => visibleQuestions(service, answers).map((q) => q.id);
 
@@ -57,5 +58,15 @@ describe("each question once", () => {
     assert.equal(p.form.version, "2026-10-qualify-2");
     const ig = toLeadInput({ ...base, answers: { monthly_revenue: "NONE", brand_link: "@marca", brand_name: "Marca Ficticia" } }, { fallbackEventId: "f", fallbackSubmittedAt: "2026-10-14T10:00:00.000Z" });
     assert.equal(ig.company.link, "@marca");
+  });
+  test("the brand is the answer, even when changed after reaching the contact step (no field to correct it there)", () => {
+    const verdict = { qualification: "FIT", lead_score: 60, qualification_reasons: [], requires_manual_review: false, next_action: "BOOK_CALL" };
+    const attribution = { source: "direct", landing_page: "/escalar-ecommerce" };
+    const contact = { contact_name: "Ana Prueba", email: "ana@marca.example", phone: "+34600000000", brand_name: "Marca Vieja", additional_notes: "", consent_contact: true, consent_nurture: false };
+    const changed = buildLead({ service: "SCALE", answers: { monthly_revenue: "10K_25K", brand_name: "Marca Nueva" }, verdict, attribution, contact });
+    assert.equal(changed.brand_name, "Marca Nueva");
+    const noAnswer = buildLead({ service: "SCALE", answers: { monthly_revenue: "10K_25K" }, verdict, attribution, contact });
+    assert.equal(noAnswer.brand_name, "Marca Vieja");
+    assert.equal(changed.form_version, "2026-10-qualify-2");
   });
 });
