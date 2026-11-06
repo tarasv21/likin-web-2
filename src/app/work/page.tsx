@@ -16,7 +16,7 @@ import { breadcrumbJsonLd, pageMetadata } from "@/lib/seo";
 export const metadata: Metadata = pageMetadata({
   title: "Work — Proyectos y casos de éxito eCommerce",
   description:
-    "Tiendas Shopify que hemos construido, marcas que hemos ayudado a crecer y resultados que podemos enseñar. Müa Kit, Tartas Bastante Majas, Bordando Hilos, Pipiola Chic, Panambi Velas, Fluxis y más.",
+    "Tiendas Shopify que hemos construido, marcas que hemos ayudado a crecer y resultados que podemos enseñar. Müa Kit, Tartas Bastante Majas, Bordando Hilos, Pipiola Chic, Beneno BCN, Fluxis y más.",
   path: site.routes.work,
 });
 

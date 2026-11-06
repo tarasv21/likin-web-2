@@ -1,7 +1,8 @@
 import manifest from "./asset-manifest.json";
 
 /**
- * Case studies. Every sentence and every number comes from "Descripcion casos exito.pdf".
+ * Case studies. Every sentence and every number comes from "Descripcion casos exito.pdf"
+ * (kept in the tarasvasyliv.com repo; latest version: portfolio of 2026-11-06).
  * Where the document gives no result, `metrics` is empty and the UI must not show one.
  */
 
@@ -214,6 +215,112 @@ export const cases: CaseStudy[] = [
     person: "Nicolás",
     store: storeAsset("panambi"),
     buildFeatured: 2,
+  },
+  {
+    slug: "beneno-bcn",
+    name: "Beneno BCN",
+    clientId: "beneno",
+    url: "https://benenobcn.com/",
+    sector: "Streetwear, arte urbano y esencia de Barcelona",
+    tracks: ["build"],
+    services: ["SHOPIFY"],
+    headline: "Una tienda que no solo vende ropa: transmite Barcelona.",
+    change: "Catálogo → escaparate",
+    summary:
+      "Beneno BCN es una marca de ropa urbana nacida en Barcelona que lleva a la calle el trabajo de artistas urbanos de la ciudad. Es una de las tiendas más complejas que hemos desarrollado: catalán y castellano con traducciones hechas a mano, una página propia para cada artista y un catálogo que destaca las ediciones limitadas.",
+    situation:
+      "Beneno BCN es una marca de ropa urbana nacida en Barcelona que lleva a la calle el trabajo de artistas urbanos de la ciudad a través de prendas originales, diseños exclusivos y ediciones limitadas. Cada colección tiene una historia detrás y un artista con nombre propio.",
+    problem:
+      "El reto era trasladar toda esa identidad a una tienda que no pareciera una marca de ropa más. Además tenía que estar en catalán y en castellano, y Beneno no quería un traductor automático: la marca debía sonar igual de auténtica en los dos idiomas sin perder sus raíces barcelonesas.",
+    intervention:
+      "Es una de las tiendas más complejas que hemos desarrollado. Todas las traducciones están hechas a mano. Cada artista colaborador tiene su propia página, con su biografía, sus obras de arte y la ropa creada con sus diseños. Organizamos el catálogo para destacar las ediciones limitadas, en las que cada diseño tiene un número determinado de unidades y, una vez agotadas, algunas prendas no vuelven a producirse. La tienda incorpora además avisos de reposición de tallas, diferentes métodos de pago y captación de suscriptores para avisar a la comunidad de cada nuevo lanzamiento.",
+    result:
+      "Una tienda que no solo vende ropa: transmite la personalidad de Beneno y da protagonismo a lo que la hace diferente: Barcelona, sus artistas y sus ediciones limitadas. Y gracias a Shopify, el equipo gestiona productos, pedidos, colecciones y contenidos de manera autónoma.",
+    metrics: [],
+    store: storeAsset("beneno"),
+  },
+  {
+    slug: "sublijalemo",
+    name: "Sublijalemo",
+    clientId: "sublijalemo",
+    url: "https://sublijalemo.es/",
+    sector: "Ropa y regalos personalizados",
+    tracks: ["build", "scale"],
+    services: ["SHOPIFY", "PAID MEDIA"],
+    headline: "Tener una web no es lo mismo que tener una tienda que vende.",
+    change: "15 → +2.000 productos",
+    summary:
+      "Sublijalemo llegó con una tienda hecha con el Kit Digital, valorada en unos 2.000 €, que en un año no le había traído ni una sola venta. Creamos desde cero una tienda en Shopify con más de 2.000 productos de sus proveedores y un botón de presupuesto que abre WhatsApp con el producto que el cliente está mirando. Con Meta Ads, hoy capta empresas que quieren personalizar la ropa de sus equipos.",
+    situation: "Sublijalemo llegó a nosotros con una tienda online hecha con el Kit Digital, valorada en unos 2.000 €, que en un año no le había traído ni una sola venta.",
+    problem:
+      "La tienda solo tenía 15 productos, no se podía personalizar nada, no había variantes, ni siquiera se podían añadir productos al carrito y no tenía pasarela de pagos. Además cargaba muy lenta y estéticamente no transmitía la calidad de su trabajo. Era una web, pero no era una tienda.",
+    intervention:
+      "Creamos desde cero una tienda en Shopify y añadimos más de 2.000 productos de sus proveedores, organizados para que el cliente encuentre lo que busca en pocos clics. En realidad son dos tiendas en una, ropa personalizada y regalos personalizados, así que diseñamos la página principal para que ambas líneas tuvieran su espacio. Con un catálogo tan grande no tiene sentido fijar precio a cada producto: creamos un botón de presupuesto que abre WhatsApp directamente con el producto que el cliente está mirando.",
+    result:
+      "Configuramos Meta Ads por completo y, a día de hoy, la tienda capta empresas que quieren personalizar la ropa de sus equipos de forma sencilla. Y lo más importante: la tienda la gestiona él mismo, sin depender de nadie.",
+    metrics: [
+      { value: "15", label: "productos en la web anterior" },
+      { value: "+2.000", label: "productos en la tienda nueva" },
+    ],
+    store: storeAsset("sublijalemo"),
+  },
+  {
+    slug: "alqya",
+    name: "Alqya",
+    clientId: "alqya",
+    url: "https://alqya.com/",
+    sector: "Aromaterapia, bienestar emocional y energía · Lujo",
+    tracks: ["build"],
+    services: ["SHOPIFY", "TRAINING"],
+    headline: "Una sola tienda para dos mercados: España y Chile.",
+    change: "Una tienda, dos mercados",
+    summary:
+      "Alqya es una marca de lujo que une aromaterapia, psicología y energía, y vende en España y en Chile. Configuramos la web para que se adapte a la región de cada visitante y muestre los precios de su país. Con un par de clases de formación y vídeos personalizados sobre su propia tienda, hoy sus fundadores la gestionan por su cuenta.",
+    situation: "Alqya es una marca de lujo que une aromaterapia, psicología y energía, y que vende tanto en España como en Chile.",
+    problem:
+      "Había dos retos. El primero, técnico: una sola tienda para dos mercados. El segundo, de confianza: los fundadores estaban convencidos de que no serían capaces de llevar la tienda solos; ellos mismos decían que eran pésimos para estas cosas.",
+    intervention:
+      "Configuramos la web para que se adapte automáticamente a la región de cada visitante y muestre los precios correctos para su país, sin que el cliente tenga que hacer nada. Les dimos un par de clases de formación y les dejamos vídeos grabados y personalizados sobre su propia tienda, para que pudieran resolver cualquier duda en el momento sin depender de nadie.",
+    result: "Hoy gestionan su tienda por su cuenta sin ningún problema. Una buena tienda online no tiene que ser complicada: si está bien construida y bien explicada, cualquier marca puede llevarla sola.",
+    metrics: [],
+    store: storeAsset("alqya"),
+  },
+  {
+    slug: "trazzados",
+    name: "Trazzados",
+    clientId: "trazzados",
+    url: "https://trazzados.es/",
+    sector: "Ropa personalizada",
+    tracks: ["build", "scale"],
+    services: ["SHOPIFY", "AUTOMATION", "PAID MEDIA"],
+    headline: "De responder mensajes a vender desde el primer mes.",
+    change: "Ventas desde el primer mes",
+    summary:
+      "Los fundadores de Trazzados pasaban buena parte del día respondiendo mensajes de clientes que preguntaban cómo personalizar sus prendas. Creamos una tienda en Shopify en la que el cliente personaliza su prenda en la web y la compra sin escribir a nadie, y acompañamos el lanzamiento con un sistema de anuncios. La tienda empezó a vender desde el primer mes.",
+    situation: "Trazzados es una marca de ropa personalizada cuyos fundadores pasaban buena parte del día respondiendo mensajes de clientes que preguntaban cómo personalizar sus prendas.",
+    intervention: "Creamos una tienda en Shopify en la que el cliente personaliza su prenda directamente en la web y la compra sin tener que escribir a nadie. Acompañamos el lanzamiento con un sistema de anuncios bien planteado desde el primer día.",
+    result:
+      "La tienda empezó a vender desde el primer mes, y todo ese tiempo que se iba en mensajes ahora se dedica a producir y hacer crecer la marca. En personalización, automatizar el pedido no es un detalle: es lo que permite escalar.",
+    metrics: [],
+    store: storeAsset("trazzados"),
+  },
+  {
+    slug: "naturales",
+    name: "Naturales",
+    clientId: "natural-es",
+    url: "https://naturalestienda.es/",
+    sector: "Velas artesanales",
+    tracks: ["build"],
+    services: ["SHOPIFY"],
+    headline: "Una tienda profesional que puede llevar ella sola.",
+    change: "Gestión totalmente autónoma",
+    summary:
+      "Naturales es una marca de velas artesanales que necesitaba una tienda online profesional, que vendiera y que pudiera llevar ella sola. Creamos una tienda en Shopify completamente funcional, cuidando la estética de un producto artesanal y un proceso de compra sencillo. Hoy la clienta gestiona su tienda de forma totalmente autónoma.",
+    situation: "Naturales es una marca de velas artesanales que necesitaba una tienda online profesional, que vendiera y que pudiera llevar ella sola.",
+    intervention: "Creamos una tienda en Shopify completamente funcional, cuidando la estética que requiere un producto artesanal y un proceso de compra sencillo de principio a fin.",
+    result: "Hoy la clienta gestiona su tienda de forma totalmente autónoma: productos, pedidos y contenidos, sin depender de desarrolladores ni agencias.",
+    metrics: [],
+    store: storeAsset("naturales"),
   },
   {
     slug: "vinoteca-jardi",

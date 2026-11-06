@@ -24,7 +24,7 @@ Variables de entorno opcionales en `.env.example`. `LEAD_WEBHOOK_URL` reenvía c
 | `/crear-tienda-online` | BUILD |
 | `/escalar-ecommerce` | SCALE |
 | `/work` | Casos de éxito (con filtros Crear / Escalar) |
-| `/work/[slug]` | Caso individual (16 casos, estáticos) |
+| `/work/[slug]` | Caso individual (21 casos, estáticos) |
 | `/aviso-legal`, `/privacidad`, `/cookies` | Legales (placeholders, `noindex`) |
 | `/api/lead` | POST del formulario de cualificación |
 | `/api/qualify-check` | Suite de regresión del motor (solo en desarrollo) |

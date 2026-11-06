@@ -125,6 +125,24 @@
       "width": 720,
       "height": 337,
       "dark": false
+    },
+    {
+      "name": "sublijalemo",
+      "width": 477,
+      "height": 328,
+      "dark": false
+    },
+    {
+      "name": "trazzados",
+      "width": 720,
+      "height": 233,
+      "dark": false
+    },
+    {
+      "name": "beneno",
+      "width": 720,
+      "height": 625,
+      "dark": false
     }
   ],
   "stack": [
@@ -217,6 +235,36 @@
     }
   ],
   "stores": [
+    {
+      "name": "alqya",
+      "fold": {
+        "width": 1440,
+        "height": 900
+      },
+      "tall": {
+        "width": 900,
+        "height": 1260
+      },
+      "long": {
+        "width": 720,
+        "height": 1872
+      }
+    },
+    {
+      "name": "beneno",
+      "fold": {
+        "width": 1440,
+        "height": 900
+      },
+      "tall": {
+        "width": 900,
+        "height": 1260
+      },
+      "long": {
+        "width": 720,
+        "height": 1872
+      }
+    },
     {
       "name": "bikini",
       "fold": {
@@ -338,6 +386,21 @@
       }
     },
     {
+      "name": "naturales",
+      "fold": {
+        "width": 1440,
+        "height": 900
+      },
+      "tall": {
+        "width": 900,
+        "height": 1260
+      },
+      "long": {
+        "width": 720,
+        "height": 1872
+      }
+    },
+    {
       "name": "panambi",
       "fold": {
         "width": 1440,
@@ -383,6 +446,21 @@
       }
     },
     {
+      "name": "sublijalemo",
+      "fold": {
+        "width": 1440,
+        "height": 900
+      },
+      "tall": {
+        "width": 900,
+        "height": 1260
+      },
+      "long": {
+        "width": 720,
+        "height": 1872
+      }
+    },
+    {
       "name": "tartas",
       "fold": {
         "width": 1440,
@@ -395,6 +473,21 @@
       "long": {
         "width": 720,
         "height": 1680
+      }
+    },
+    {
+      "name": "trazzados",
+      "fold": {
+        "width": 1440,
+        "height": 900
+      },
+      "tall": {
+        "width": 900,
+        "height": 1260
+      },
+      "long": {
+        "width": 720,
+        "height": 1718
       }
     },
     {
