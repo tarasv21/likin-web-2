@@ -341,6 +341,21 @@
       }
     },
     {
+      "name": "kumbia",
+      "fold": {
+        "width": 1440,
+        "height": 900
+      },
+      "tall": {
+        "width": 900,
+        "height": 1260
+      },
+      "long": {
+        "width": 720,
+        "height": 1872
+      }
+    },
+    {
       "name": "luanlove",
       "fold": {
         "width": 1440,
@@ -353,6 +368,21 @@
       "long": {
         "width": 720,
         "height": 1721
+      }
+    },
+    {
+      "name": "mar-al-vent",
+      "fold": {
+        "width": 1440,
+        "height": 900
+      },
+      "tall": {
+        "width": 900,
+        "height": 1260
+      },
+      "long": {
+        "width": 720,
+        "height": 1872
       }
     },
     {
